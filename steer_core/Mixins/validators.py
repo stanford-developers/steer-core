@@ -5,6 +5,12 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator
 
 
+ALLOWED_REFERENCE = [
+    'Na/Na+',
+    'Li/Li+'
+]
+
+
 class ValidationMixin:
 
     @staticmethod
