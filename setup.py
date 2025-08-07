@@ -25,7 +25,8 @@ setup(
         "dash",
         "dash_bootstrap_components",
         "flask_caching",
-        "nbformat"
+        "nbformat",
+        "scipy"
     ],
     scripts=[],
     classifiers=[ 
@@ -35,4 +36,5 @@ setup(
     ],
     python_requires=">=3.10",
 )
+
 
