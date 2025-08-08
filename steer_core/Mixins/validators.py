@@ -48,7 +48,7 @@ class ValidationMixin:
         TypeError
             If the value is not an instance of InsulationMaterial.
         """
-        from steer_opencell_design.Materials.RawMaterials import InsulationMaterial
+        from steer_materials.CellMaterials.Base import InsulationMaterial
 
         if not isinstance(value, InsulationMaterial):
             raise TypeError(f"Expected an instance of InsulationMaterial. Provided: {type(value)}.")
@@ -88,7 +88,7 @@ class ValidationMixin:
         TypeError
             If the value is not an instance of _ActiveMaterial.
         """
-        from steer_opencell_design.Materials.ElectrodeMaterials import _ActiveMaterial
+        from steer_materials.CellMaterials.Electrode import _ActiveMaterial
 
         if not isinstance(value, _ActiveMaterial):
             raise TypeError(f"Expected an instance of _ActiveMaterial. Provided: {type(value)}.")
@@ -108,7 +108,7 @@ class ValidationMixin:
         TypeError
             If the value is not an instance of Binder.
         """
-        from steer_opencell_design.Materials.ElectrodeMaterials import Binder
+        from steer_materials.CellMaterials.Electrode import Binder
 
         if not isinstance(value, Binder):
             raise TypeError(f"Expected an instance of Binder. Provided: {type(value)}.")
@@ -128,7 +128,7 @@ class ValidationMixin:
         TypeError
             If the value is not an instance of ConductiveAdditive.
         """
-        from steer_opencell_design.Materials.ElectrodeMaterials import ConductiveAdditive
+        from steer_materials.CellMaterials.Electrode import ConductiveAdditive
 
         if not isinstance(value, ConductiveAdditive):
             raise TypeError(f"Expected an instance of ConductiveAdditive. Provided: {type(value)}.")
@@ -263,7 +263,7 @@ class ValidationMixin:
         ValueError
             If the material is not a valid current collector material.
         """
-        from steer_opencell_design.Materials.RawMaterials import CurrentCollectorMaterial
+        from steer_materials.CellMaterials.Base import CurrentCollectorMaterial
 
         if type(material) is not CurrentCollectorMaterial:
 
