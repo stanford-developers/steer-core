@@ -2,15 +2,14 @@ import sqlite3 as sql
 from pathlib import Path
 import pandas as pd
 
-from steer_core.Constants.unit_converters import *
-
+from steer_core.Constants.Units import *
 
 
 class DataManager:
     
     def __init__(self):
 
-        self._db_path = (Path(__file__).parent / '../Data/database.db').resolve()
+        self._db_path = (Path(__file__).parent / '../steer_core/Data/database.db').resolve()
         self._connection = sql.connect(self._db_path)
         self._cursor = self._connection.cursor()
 
