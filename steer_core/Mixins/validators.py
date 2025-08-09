@@ -68,7 +68,7 @@ class ValidationMixin:
         TypeError
             If the value is not an instance of _CurrentCollector.
         """
-        from steer_opencell_design.Materials.CurrentCollectors import _CurrentCollector
+        from steer_opencell_design.Components.CurrentCollectors import _CurrentCollector
 
         if not isinstance(value, _CurrentCollector):
             raise TypeError(f"Expected an instance of _CurrentCollector. Provided: {type(value)}.")
@@ -285,7 +285,7 @@ class ValidationMixin:
         ValueError
             If the weld tab is not valid.
         """
-        from steer_opencell_design.Materials.CurrentCollectors import WeldTab
+        from steer_opencell_design.Components.CurrentCollectors import WeldTab
         
         if not isinstance(tab, WeldTab):
             raise ValueError(f"Invalid weld tab: {tab}. Must be an instance of WeldTab.")
