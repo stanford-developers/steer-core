@@ -182,8 +182,8 @@ def calculate_mark_intervals(min_values: List[float], max_values: List[float],
     Creates marks at regular intervals that align with intuitive values:
     - Range < 1: marks on every 0.1 (interval = 0.1)
     - Range < 10: marks on every integer (interval = 1.0)  
-    - Range < 100: marks on every multiple of 10 (interval = 10.0)
-    - Range >= 100: marks on every multiple of 100 (interval = 100.0)
+    - Range < 200: marks on every multiple of 10 (interval = 10.0)
+    - Range >= 200: marks on every multiple of 100 (interval = 100.0)
     
     Args:
         min_values (List[float]): List of minimum values for each parameter
@@ -213,12 +213,12 @@ def calculate_mark_intervals(min_values: List[float], max_values: List[float],
             continue
         
         # Determine interval based on range magnitude
-        # Also consider the number of marks to avoid overcrowding
+        # Use more stable boundaries to avoid sudden changes near threshold values
         if range_val < 1:
             interval = 0.1  # Every 0.1 for very small ranges
         elif range_val < 10:
             interval = 1.0  # Every integer for ranges like 0-9.9
-        elif range_val < 100:
+        elif range_val < 200:  # Extended from 100 to 200 for stability
             interval = 10.0  # Every multiple of 10
         else:
             interval = 100.0  # Every multiple of 100
