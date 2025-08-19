@@ -14,6 +14,7 @@ setup(
     author_email='nsiemons@stanford.edu',
     url="https://github.com/nicholas9182/steer-core/",
     packages=find_packages(),
+    include_package_data=True,
     install_requires=[
         "pandas==2.1.4",
         "numpy==1.26.4",
