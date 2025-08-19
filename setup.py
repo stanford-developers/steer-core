@@ -1,5 +1,4 @@
-from distutils.core import setup
-from setuptools import find_packages
+from setuptools import setup, find_packages
 import pathlib
 import re
 
@@ -16,17 +15,11 @@ setup(
     url="https://github.com/nicholas9182/steer-core/",
     packages=find_packages(),
     install_requires=[
-        "pandas",
-        "numpy",
-        "datetime",
-        "scipy",
-        "shapely",
-        "plotly",
-        "dash",
-        "dash_bootstrap_components",
-        "flask_caching",
-        "nbformat",
-        "scipy"
+        "pandas==2.1.4",
+        "numpy==1.26.4",
+        "datetime==5.5",
+        "scipy==1.15.3",
+        "plotly==6.2.0",
     ],
     scripts=[],
     classifiers=[ 
@@ -36,5 +29,3 @@ setup(
     ],
     python_requires=">=3.10",
 )
-
-
