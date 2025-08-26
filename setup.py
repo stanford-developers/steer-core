@@ -22,6 +22,7 @@ setup(
         "scipy==1.15.3",
         "plotly==6.2.0",
     ],
+    package_data={"steer_core.Data": ["database.db"]},
     scripts=[],
     classifiers=[ 
         "Programming Language :: Python :: 3",

@@ -1,6 +1,7 @@
 import sqlite3 as sql
 from pathlib import Path
 import pandas as pd
+import importlib.resources
 
 from steer_core.Constants.Units import *
 
@@ -9,9 +10,10 @@ class DataManager:
     
     def __init__(self):
 
-        self._db_path = (Path(__file__).parent / '../steer_core/Data/database.db').resolve()
-        self._connection = sql.connect(self._db_path)
-        self._cursor = self._connection.cursor()
+        with importlib.resources.path("steer_core.Data", "database.db") as db_path:
+            self._db_path = db_path
+            self._connection = sql.connect(self._db_path)
+            self._cursor = self._connection.cursor()
 
     def create_table(self, table_name: str, columns: dict):
         """
