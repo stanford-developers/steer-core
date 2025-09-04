@@ -7,7 +7,6 @@ slider configurations based on parameter ranges.
 
 import math
 from typing import List, Union, Dict
-import numpy as np
 
 
 
@@ -179,11 +178,17 @@ def calculate_mark_intervals(min_values: List[float], max_values: List[float],
     """
     Calculate mark intervals for sliders based on range magnitude.
     
-    Creates marks at regular intervals that align with intuitive values:
-    - Range < 1: marks on every 0.1 (interval = 0.1)
-    - Range < 10: marks on every integer (interval = 1.0)  
-    - Range < 100: marks on every multiple of 10 (interval = 10.0)
-    - Range >= 100: marks on every multiple of 100 (interval = 100.0)
+    Creates marks at regular intervals that align with intuitive values while
+    avoiding overcrowding by ensuring no more than ~5-6 marks per slider:
+    - Range < 0.5: marks on every 0.1, but max 5 marks
+    - Range < 1: marks on every 0.2 (interval = 0.2)
+    - Range < 5: marks on every 1.0 (interval = 1.0)  
+    - Range < 10: marks on every 2.0 (interval = 2.0)
+    - Range < 50: marks on every 10.0 (interval = 10.0)
+    - Range < 100: marks on every 20.0 (interval = 20.0)
+    - Range < 500: marks on every 100.0 (interval = 100.0)
+    - Range < 1000: marks on every 200.0 (interval = 200.0)
+    - Range >= 1000: marks on every 500.0 (interval = 500.0)
     
     Args:
         min_values (List[float]): List of minimum values for each parameter
@@ -195,10 +200,10 @@ def calculate_mark_intervals(min_values: List[float], max_values: List[float],
         
     Examples:
         >>> min_vals = [0, 0, 0, 0]
-        >>> max_vals = [0.5, 5, 50, 500]
+        >>> max_vals = [0.3, 2, 250, 2000]
         >>> intervals = calculate_mark_intervals(min_vals, max_vals)
         >>> intervals
-        [0.1, 1.0, 10.0, 100.0]
+        [0.1, 1.0, 100.0, 500.0]
     """
     if len(min_values) != len(max_values):
         raise ValueError("min_values and max_values must have the same length")
@@ -212,24 +217,40 @@ def calculate_mark_intervals(min_values: List[float], max_values: List[float],
             intervals.append(1.0)
             continue
         
-        # Determine interval based on range magnitude
-        # Also consider the number of marks to avoid overcrowding
-        if range_val < 1:
-            interval = 0.1  # Every 0.1 for very small ranges
+        # Determine interval based on range magnitude to avoid overcrowding
+        if range_val < 0.5:
+            # Very small ranges: use 0.1 but ensure max 5 marks
+            interval = 0.1
+            num_marks = range_val / interval
+            if num_marks > 5:
+                interval = range_val / 4  # Limit to ~4 marks
+        elif range_val < 1:
+            interval = 0.2  # Every 0.2 for ranges like 0.5-0.9
+        elif range_val < 5:
+            interval = 1.0  # Every integer for small ranges
         elif range_val < 10:
-            interval = 1.0  # Every integer for ranges like 0-9.9
-        elif range_val < 100:
+            interval = 2.0  # Every 2 units
+        elif range_val < 50:
             interval = 10.0  # Every multiple of 10
-        else:
+        elif range_val < 100:
+            interval = 20.0  # Every multiple of 20
+        elif range_val < 500:
             interval = 100.0  # Every multiple of 100
+        elif range_val < 1000:
+            interval = 200.0  # Every multiple of 200
+        else:
+            interval = 500.0  # Every multiple of 500 for very large ranges
         
         intervals.append(interval)
     
     return intervals
 
 
-def create_slider_config(min_values: List[float], max_values: List[float],
-                        property_values: List[float] = None) -> dict:
+def create_slider_config(
+        min_values: List[float], 
+        max_values: List[float],
+        property_values: List[float] = None
+) -> dict:
     """
     Create complete slider configurations with automatically calculated steps and marks.
     

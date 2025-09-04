@@ -62,6 +62,7 @@ class SliderWithTextInput:
         slider_disable: bool = False,
         div_width: str = 'calc(90%)',
         message: str = None,
+        marks: dict = None,
     ):
         """
         Initialize the SliderWithTextInput component.
@@ -94,6 +95,11 @@ class SliderWithTextInput:
             message (str, optional): Optional message to display between the title
                                    and slider. If None, no message is displayed.
                                    Defaults to None.
+            marks (dict, optional): Pre-computed marks dictionary for the slider.
+                                  If provided, these marks will be used instead of
+                                  auto-generating marks from mark_interval.
+                                  Keys should be numeric positions, values should be labels.
+                                  Defaults to None.
         
         Raises:
             ValueError: If min_val >= max_val, or if step <= 0, or if mark_interval <= 0.
@@ -112,6 +118,7 @@ class SliderWithTextInput:
         self.div_width = div_width
         self.slider_disable = slider_disable
         self.message = message
+        self.marks = marks
 
         self.slider_id = self._make_id('slider')
         self.input_id = self._make_id('input')
@@ -149,10 +156,17 @@ class SliderWithTextInput:
                            tick marks, and styling options.
         
         Note:
-            - Tick marks are generated at intervals specified by mark_interval
+            - Uses pre-computed marks if provided, otherwise generates tick marks
+              at intervals specified by mark_interval
             - updatemode is set to 'mouseup' to reduce callback frequency
             - The slider can be disabled via the slider_disable attribute
         """
+        # Use provided marks or generate them from mark_interval
+        if self.marks is not None:
+            slider_marks = self.marks
+        else:
+            slider_marks = {int(i): "" for i in np.arange(self.min_val, self.max_val + self.mark_interval, self.mark_interval)}
+            
         return ds.dcc.Slider(
             id=self.slider_id,
             min=self.min_val,
@@ -160,7 +174,7 @@ class SliderWithTextInput:
             value=self.default_val,
             step=self.step,
             disabled=self.slider_disable,
-            marks={int(i): "" for i in np.arange(self.min_val, self.max_val + self.mark_interval, self.mark_interval)},
+            marks=slider_marks,
             updatemode='mouseup'
         )
 
@@ -218,7 +232,7 @@ class SliderWithTextInput:
         
         # Build the component list
         components = [
-            ds.html.P(slider_title, style={'margin-left': '20px', 'margin-bottom': '0px'})
+            ds.html.P(slider_title, style={'margin-left': '20px', 'margin-bottom': '0px', 'font-weight': 'bold'})
         ]
         
         # Add optional message if provided
