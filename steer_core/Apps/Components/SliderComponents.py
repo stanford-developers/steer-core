@@ -36,12 +36,12 @@ class SliderWithTextInput:
     Example:
         >>> slider_component = SliderWithTextInput(
         ...     id_base={'type': 'parameter', 'index': 0},
+        ...     property_name='temperature',
+        ...     title='Temperature (°C)',
         ...     min_val=0.0,
         ...     max_val=100.0,
         ...     step=1.0,
-        ...     mark_interval=10.0,
-        ...     property_name='temperature',
-        ...     title='Temperature (°C)',
+        ...     mark_interval=50.0,
         ...     default_val=25.0,
         ...     message='Optimal range is 20-30°C'  # Optional message
         ... )
@@ -51,12 +51,12 @@ class SliderWithTextInput:
     def __init__(
         self,
         id_base: dict,
-        min_val: float,
-        max_val: float,
-        step: float,
-        mark_interval: float,
         property_name: str,
         title: str,
+        min_val: float = 0.0,
+        max_val: float = 100.0,
+        step: float = 1.0,
+        mark_interval: float = 50.0,
         default_val: Union[float, list[float]] = None,
         with_slider_titles: bool = True,
         slider_disable: bool = False,
@@ -71,17 +71,17 @@ class SliderWithTextInput:
             id_base (dict): Base dictionary for generating component IDs. Should contain
                            identifying information that will be extended with component-specific
                            subtypes and properties.
-            min_val (float): Minimum value that can be selected on the slider or entered
-                           in the text input.
-            max_val (float): Maximum value that can be selected on the slider or entered
-                           in the text input.
-            step (float): The granularity of value changes. Determines the smallest
-                         increment/decrement possible.
-            mark_interval (float): The spacing between tick marks displayed on the slider.
-                                 Should be a multiple of step for best visual alignment.
             property_name (str): A string identifier for this specific property, used
                                in ID generation and callbacks.
             title (str): Human-readable title displayed above the component.
+            min_val (float, optional): Minimum value that can be selected on the slider or entered
+                           in the text input. Defaults to 0.0.
+            max_val (float, optional): Maximum value that can be selected on the slider or entered
+                           in the text input. Defaults to 100.0.
+            step (float, optional): The granularity of value changes. Determines the smallest
+                         increment/decrement possible. Defaults to 1.0.
+            mark_interval (float, optional): The spacing between tick marks displayed on the slider.
+                                 Should be a multiple of step for best visual alignment. Defaults to 50.0.
             default_val (Union[float, list[float]], optional): Initial value to display.
                         If None, defaults to min_val. Can be a single float or list
                         for compatibility with range sliders.
@@ -439,14 +439,14 @@ class SliderWithTextInputAndCheckbox(SliderWithTextInput):
     Example:
         >>> slider_component = SliderWithTextInputAndCheckbox(
         ...     id_base={'type': 'parameter', 'index': 0},
+        ...     property_name='temperature',
+        ...     title='Temperature (°C)',
+        ...     checkbox_message='Use automatic temperature control',
         ...     min_val=0.0,
         ...     max_val=100.0,
         ...     step=1.0,
-        ...     mark_interval=10.0,
-        ...     property_name='temperature',
-        ...     title='Temperature (°C)',
+        ...     mark_interval=50.0,
         ...     default_val=25.0,
-        ...     checkbox_message='Use automatic temperature control',
         ...     checkbox_default=True
         ... )
         >>> layout_element = slider_component()  # Returns Dash HTML Div component
@@ -455,13 +455,13 @@ class SliderWithTextInputAndCheckbox(SliderWithTextInput):
     def __init__(
         self,
         id_base: dict,
-        min_val: float,
-        max_val: float,
-        step: float,
-        mark_interval: float,
         property_name: str,
         title: str,
         checkbox_message: str,
+        min_val: float = 0.0,
+        max_val: float = 100.0,
+        step: float = 1.0,
+        mark_interval: float = 50.0,
         default_val: Union[float, list[float]] = None,
         checkbox_default: bool = False,
         with_slider_titles: bool = True,
@@ -474,13 +474,13 @@ class SliderWithTextInputAndCheckbox(SliderWithTextInput):
         
         Args:
             id_base (dict): Base dictionary for generating component IDs.
-            min_val (float): Minimum value for the slider and input.
-            max_val (float): Maximum value for the slider and input.
-            step (float): Step size for value increments/decrements.
-            mark_interval (float): Interval between tick marks on the slider.
             property_name (str): String identifier for this property.
             title (str): Title displayed above the component.
             checkbox_message (str): Message displayed next to the checkbox.
+            min_val (float, optional): Minimum value for the slider and input. Defaults to 0.0.
+            max_val (float, optional): Maximum value for the slider and input. Defaults to 100.0.
+            step (float, optional): Step size for value increments/decrements. Defaults to 1.0.
+            mark_interval (float, optional): Interval between tick marks on the slider. Defaults to 50.0.
             default_val (Union[float, list[float]], optional): Initial value for slider/input.
             checkbox_default (bool, optional): Initial checked state of checkbox. Defaults to False.
             with_slider_titles (bool, optional): Whether to show title. Defaults to True.
@@ -491,12 +491,12 @@ class SliderWithTextInputAndCheckbox(SliderWithTextInput):
         # Initialize parent class
         super().__init__(
             id_base=id_base,
+            property_name=property_name,
+            title=title,
             min_val=min_val,
             max_val=max_val,
             step=step,
             mark_interval=mark_interval,
-            property_name=property_name,
-            title=title,
             default_val=default_val,
             with_slider_titles=with_slider_titles,
             slider_disable=slider_disable,
