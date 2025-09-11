@@ -14,124 +14,26 @@ ALLOWED_REFERENCE = [
 class ValidationMixin:
 
     @staticmethod
-    def validate_formulations(value: Type) -> None:
+    def validate_type(value: Type, expected_type: Type, name: str) -> None:
         """
-        Validate that a value is an instance of _ElectrodeFormulation.
+        Validate that a value is of the expected type.
 
         Parameters
         ----------
         value : Type
             The value to validate.
+        expected_type : Type
+            The expected type of the value.
+        name : str
+            The name of the parameter for error messages.
 
         Raises
         ------
         TypeError
-            If the value is not an instance of _ElectrodeFormulation.
+            If the value is not of the expected type.
         """
-        from steer_opencell_design.Formulations.ElectrodeFormulations import _ElectrodeFormulation
-
-        if not isinstance(value, _ElectrodeFormulation):
-            raise TypeError(f"Expected an instance of _ElectrodeFormulation. Provided: {type(value)}.")
-
-    @staticmethod
-    def validate_insulation_material(value: Type) -> None:
-        """
-        Validate that a value is an instance of InsulationMaterial.
-
-        Parameters
-        ----------
-        value : Type
-            The value to validate.
-
-        Raises
-        ------
-        TypeError
-            If the value is not an instance of InsulationMaterial.
-        """
-        from steer_materials.CellMaterials.Base import InsulationMaterial
-
-        if not isinstance(value, InsulationMaterial):
-            raise TypeError(f"Expected an instance of InsulationMaterial. Provided: {type(value)}.")
-
-    @staticmethod
-    def validate_current_collector(value: Type) -> None:
-        """
-        Validate that a value is an instance of _CurrentCollector.
-        
-        Parameters
-        ----------
-        value : Type
-            The value to validate.
-
-        Raises
-        ------
-        TypeError
-            If the value is not an instance of _CurrentCollector.
-        """
-        from steer_opencell_design.Components.CurrentCollectors import _CurrentCollector
-
-        if not isinstance(value, _CurrentCollector):
-            raise TypeError(f"Expected an instance of _CurrentCollector. Provided: {type(value)}.")
-
-    @staticmethod
-    def validate_active_material(value: Type) -> None:
-        """
-        Validate that a value is an instance of _ActiveMaterial.
-        
-        Parameters
-        ----------
-        value : Type
-            The value to validate.
-
-        Raises
-        ------
-        TypeError
-            If the value is not an instance of _ActiveMaterial.
-        """
-        from steer_materials.CellMaterials.Electrode import _ActiveMaterial
-
-        if not isinstance(value, _ActiveMaterial):
-            raise TypeError(f"Expected an instance of _ActiveMaterial. Provided: {type(value)}.")
-
-    @staticmethod
-    def validate_binder(value: Type) -> None:
-        """
-        Validate that a value is an instance of Binder.
-        
-        Parameters
-        ----------
-        value : Type
-            The value to validate.
-
-        Raises
-        ------
-        TypeError
-            If the value is not an instance of Binder.
-        """
-        from steer_materials.CellMaterials.Electrode import Binder
-
-        if not isinstance(value, Binder):
-            raise TypeError(f"Expected an instance of Binder. Provided: {type(value)}.")
-        
-    @staticmethod
-    def validate_conductive_additive(value: Type) -> None:
-        """
-        Validate that a value is an instance of ConductiveAdditive.
-        
-        Parameters
-        ----------
-        value : Type
-            The value to validate.
-
-        Raises
-        ------
-        TypeError
-            If the value is not an instance of ConductiveAdditive.
-        """
-        from steer_materials.CellMaterials.Electrode import ConductiveAdditive
-
-        if not isinstance(value, ConductiveAdditive):
-            raise TypeError(f"Expected an instance of ConductiveAdditive. Provided: {type(value)}.")
+        if not isinstance(value, expected_type):
+            raise TypeError(f"{name} must be of type {expected_type.__name__}. Provided: {type(value).__name__}.")
 
     @staticmethod
     def validate_percentage(value: float, name: str) -> None:
@@ -249,48 +151,6 @@ class ValidationMixin:
             raise TypeError("All coordinates in datum must be numbers.")
     
     @staticmethod
-    def validate_current_collector_material(material: Type) -> None:
-        """
-        Validate the current collector material.
-
-        Parameters
-        ----------
-        material : str
-            The material to validate.
-
-        Raises
-        ------
-        ValueError
-            If the material is not a valid current collector material.
-        """
-        from steer_materials.CellMaterials.Base import CurrentCollectorMaterial
-
-        if type(material) is not CurrentCollectorMaterial:
-
-            raise ValueError(f"Invalid current collector material: {material}. "
-                             "Must be an instance of CurrentCollectorMaterial.")
-
-    @staticmethod
-    def validate_weld_tab(tab) -> None:
-        """
-        Validate the weld tab.
-
-        Parameters
-        ----------
-        tab : WeldTab
-            The weld tab to validate.
-
-        Raises
-        ------
-        ValueError
-            If the weld tab is not valid.
-        """
-        from steer_opencell_design.Components.CurrentCollectors import WeldTab
-        
-        if not isinstance(tab, WeldTab):
-            raise ValueError(f"Invalid weld tab: {tab}. Must be an instance of WeldTab.")
-
-    @staticmethod
     def validate_positive_float(value: float, name: str) -> None:
         """
         Validate that a value is a positive float.
@@ -382,39 +242,3 @@ class ValidationMixin:
         if len(value) == 0:
             raise ValueError(f"{name} must not be an empty list. Provided: {value}.")
         
-
-class DataMixin:
-    """
-    A mixin class to handle data processing and validation for electrode materials.
-    Provides methods to calculate properties, check curve directions, and process half-cell curves.
-    """
-    @staticmethod
-    def enforce_monotonicity(array: np.ndarray) -> np.ndarray:
-        """
-        Enforces a monotonic version of the input array.
-        If the array is not monotonic, it is smoothed using cumulative max/min.
-        """
-        x = np.arange(len(array))
-        diff = np.diff(array)
-
-        if np.all(diff >= 0):
-            return array  # Already monotonic increasing
-
-        if np.all(diff <= 0):
-            return array  # Already monotonic decreasing, reverse it
-
-        # Determine general trend (ascending or descending)
-        ascending = array[-1] >= array[0]
-
-        # Sort by x so that PCHIP works (PCHIP requires increasing x)
-        # We'll smooth the array using PCHIP, then enforce monotonicity
-        interpolator = PchipInterpolator(x, array, extrapolate=False)
-        new_array = interpolator(x)
-
-        # Enforce strict monotonicity post-smoothing
-        if ascending:
-            new_array = np.maximum.accumulate(new_array)
-        else:
-            new_array = np.minimum.accumulate(new_array)
-
-        return new_array

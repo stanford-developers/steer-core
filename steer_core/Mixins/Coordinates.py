@@ -280,10 +280,10 @@ class CoordinateMixin:
         Returns
         -------
         Tuple[np.ndarray, np.ndarray]
-            Modified x and y coordinate arrays with None separators between segments
+            Modified x and y coordinate arrays with np.nan separators between segments
         """
         if len(x_coords) == 0 or len(y_coords) == 0:
-            return np.array([]), np.array([])
+            return np.array([], dtype=float), np.array([], dtype=float)
         
         x_min, x_max = np.min(x_coords), np.max(x_coords)
         y_min, y_max = np.min(y_coords), np.max(y_coords)
@@ -297,7 +297,7 @@ class CoordinateMixin:
         if len(valid_positions) == 0:
             rect_x = [x_min, x_max, x_max, x_min, x_min]
             rect_y = [y_min, y_min, y_max, y_max, y_min]
-            return np.array(rect_x, dtype=object), np.array(rect_y, dtype=object)
+            return np.array(rect_x, dtype=float), np.array(rect_y, dtype=float)
         
         # Sort weld tab cut positions
         cuts = np.sort(valid_positions)
@@ -317,7 +317,7 @@ class CoordinateMixin:
         if start < x_max:
             segments.append((start, x_max))
         
-        # Build rectangles for each kept segment with None separators
+        # Build rectangles for each kept segment with np.nan separators
         x_result = []
         y_result = []
         
@@ -329,10 +329,10 @@ class CoordinateMixin:
             x_result.extend(rect_x)
             y_result.extend(rect_y)
             
-            # Add None separator (except for the last segment)
+            # Add np.nan separator (except for the last segment)
             if i < len(segments) - 1:  # Fixed: use index comparison
-                x_result.append(None)
-                y_result.append(None)
+                x_result.append(np.nan)
+                y_result.append(np.nan)
         
-        return np.array(x_result, dtype=object), np.array(y_result, dtype=object)
+        return np.array(x_result, dtype=float), np.array(y_result, dtype=float)
 
