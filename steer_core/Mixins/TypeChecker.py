@@ -2,8 +2,6 @@ from typing import Type
 import pandas as pd
 import numpy as np
 
-from scipy.interpolate import PchipInterpolator
-
 
 ALLOWED_REFERENCE = [
     'Na/Na+',
