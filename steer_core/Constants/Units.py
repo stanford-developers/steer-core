@@ -27,6 +27,8 @@ mA_TO_A = 1e-3
 # Time units
 S_TO_H = 1/3600
 H_TO_S = 3600
+S_TO_Y = 1/(3600*24*365)
+Y_TO_S = 3600*24*365
 
 # Energy units
 W_TO_KW = 1e-3
@@ -34,3 +36,6 @@ W_TO_KW = 1e-3
 # Angle units
 DEG_TO_RAD = 0.017453292519943295
 
+# Percentage units
+PERCENT_TO_FRACTION = 1e-2
+FRACTION_TO_PERCENT = 1e2

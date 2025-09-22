@@ -150,29 +150,6 @@ def calculate_input_steps(min_values: List[float], max_values: List[float]) -> L
     return input_steps
 
 
-def _round_to_reasonable_precision(value: float) -> float:
-    """
-    Round a step value to a reasonable precision for UI display.
-    
-    Args:
-        value (float): The step value to round
-        
-    Returns:
-        float: Rounded step value
-    """
-    if value >= 1:
-        # For values >= 1, round to reasonable whole numbers or simple decimals
-        if value >= 10:
-            return round(value)
-        else:
-            return round(value, 1)
-    else:
-        # For values < 1, determine appropriate decimal places
-        magnitude = math.floor(math.log10(value))
-        decimal_places = max(1, -magnitude + 1)
-        return round(value, decimal_places)
-
-
 def calculate_mark_intervals(min_values: List[float], max_values: List[float], 
                            target_marks: int = 5) -> List[float]:
     """
@@ -258,6 +235,10 @@ def create_slider_config(
     to create ready-to-use slider configurations. If property values are provided,
     they will be validated and adjusted to align with the calculated slider grid.
     
+    Step sizes are calculated based on the magnitude of the maximum values (0 to max)
+    rather than the range (min to max), providing consistent granularity regardless
+    of the minimum value.
+    
     Args:
         min_values (List[float]): Minimum values for each slider
         max_values (List[float]): Maximum values for each slider
@@ -267,9 +248,9 @@ def create_slider_config(
         
     Returns:
         dict: Configuration dictionary with keys:
-            - 'min_vals' (List[float]): Minimum values for each slider (snapped to slider grid)
-            - 'max_vals' (List[float]): Maximum values for each slider (snapped to slider grid)
-            - 'step_vals' (List[float]): Calculated step values for each slider (same as input steps)
+            - 'min_vals' (List[float]): Minimum values for each slider (snapped to grid, >= original min)
+            - 'max_vals' (List[float]): Maximum values for each slider (snapped to grid, <= original max)
+            - 'step_vals' (List[float]): Calculated step values based on max value magnitude
             - 'input_step_vals' (List[float]): Step values for inputs (same as slider steps)
             - 'mark_vals' (List[dict]): Mark positions for each slider (position → None mapping)
             - 'grid_slider_vals' (List[float], optional): Property values snapped to slider grid if provided
@@ -281,10 +262,11 @@ def create_slider_config(
         ...     max_values=[100, 80, 1000],
         ...     property_values=[23.7, 45.3, 567.8]
         ... )
+        >>> # Step sizes based on max values: 100->0.1, 80->0.01, 1000->1.0
         >>> config['step_vals']
-        [0.01, 0.01, 1.0]
+        [0.1, 0.01, 1.0]
         >>> config['input_step_vals']
-        [0.01, 0.01, 1.0]
+        [0.1, 0.01, 1.0]
         >>> config['grid_vals'][0]  # 23.7 snapped to grid
         23.7
     """
@@ -295,23 +277,34 @@ def create_slider_config(
     if property_values is not None and len(property_values) != len(min_values):
         raise ValueError("property_values must have the same length as min_values and max_values")
     
-    # Calculate steps and mark intervals
-    steps = calculate_slider_steps(min_values, max_values)  # Use the calculated steps directly
+    # Calculate steps and mark intervals based on max values (0 to max) instead of range
+    steps = []
+    input_steps = []
+    for max_val in max_values:
+        # Calculate step based on maximum value magnitude (0 to max)
+        step = _calculate_step_for_range(max_val)
+        input_step = _calculate_input_step_for_range(max_val)
+        steps.append(step)
+        input_steps.append(input_step)
     
-    input_steps = calculate_input_steps(min_values, max_values)  # Calculate input steps based on range
-    
-    # Snap min and max values to the slider grid
+    # Snap min and max values to the slider grid (keeping within original range)
     grid_min_values = []
     grid_max_values = []
     for i, (min_val, max_val, step) in enumerate(zip(min_values, max_values, steps)):
-        # For min value: round down to nearest grid point (floor)
-        grid_min = min_val - (min_val % step) if min_val % step != 0 else min_val
-        
-        # For max value: round up to nearest grid point (ceil)
-        if max_val % step == 0:
-            grid_max = max_val
+        # For min value: round up to nearest grid point (ceil) to stay >= min_val
+        if min_val % step == 0:
+            grid_min = min_val
         else:
-            grid_max = max_val + (step - (max_val % step))
+            grid_min = min_val + (step - (min_val % step))
+        
+        # For max value: round down to nearest grid point (floor) to stay <= max_val
+        grid_max = max_val - (max_val % step) if max_val % step != 0 else max_val
+        
+        # Ensure we have a valid range (grid_min <= grid_max)
+        if grid_min > grid_max:
+            # If rounding inward creates invalid range, use original values
+            grid_min = min_val
+            grid_max = max_val
         
         grid_min_values.append(grid_min)
         grid_max_values.append(grid_max)
@@ -394,8 +387,8 @@ def create_range_slider_config(min_values: List[float], max_values: List[float],
         
     Returns:
         dict: Complete configuration dictionary containing:
-            - 'min_vals' (List[float]): Minimum values for each range slider (snapped to slider grid)
-            - 'max_vals' (List[float]): Maximum values for each range slider (snapped to slider grid)
+            - 'min_vals' (List[float]): Minimum values for each range slider (snapped to grid, >= original min)
+            - 'max_vals' (List[float]): Maximum values for each range slider (snapped to grid, <= original max)
             - 'step_vals' (List[float]): Calculated step values for each range slider (same as input steps)
             - 'input_step_vals' (List[float]): Step values for inputs (same as slider steps)
             - 'mark_vals' (List[dict]): Mark positions for each range slider (position → '' mapping)
@@ -435,16 +428,24 @@ def create_range_slider_config(min_values: List[float], max_values: List[float],
     
     input_steps = calculate_input_steps(min_values, max_values)  # Calculate input steps based on range
 
-    # Snap min and max values to the slider grid
+    # Snap min and max values to the slider grid (keeping within original range)
     grid_min_values = []
     grid_max_values = []
     for i, (min_val, max_val, step) in enumerate(zip(min_values, max_values, steps)):
-        # For min value: round down to nearest grid point (floor)
-        grid_min = min_val - (min_val % step) if min_val % step != 0 else min_val
+        # For min value: round up to nearest grid point (ceil) to stay >= min_val
+        if min_val % step == 0:
+            grid_min = min_val
+        else:
+            grid_min = min_val + (step - (min_val % step))
         
-        # For max value: round up to nearest grid point (ceil)
-        remainder = max_val % step
-        grid_max = max_val + (step - remainder) if remainder != 0 else max_val
+        # For max value: round down to nearest grid point (floor) to stay <= max_val
+        grid_max = max_val - (max_val % step) if max_val % step != 0 else max_val
+        
+        # Ensure we have a valid range (grid_min <= grid_max)
+        if grid_min > grid_max:
+            # If rounding inward creates invalid range, use original values
+            grid_min = min_val
+            grid_max = max_val
         
         grid_min_values.append(grid_min)
         grid_max_values.append(grid_max)

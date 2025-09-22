@@ -122,8 +122,8 @@ class MaterialSelector:
         # Normalize configurations to handle both legacy and create_slider_config formats
         if slider_configs is not None and slider_configs:  # Check if not empty
             # Use slider_configs arrays (index 0 = density, index 1 = cost)
-            density_normalized = self._normalize_config_from_arrays(slider_configs, 0, 'Density')
-            cost_normalized = self._normalize_config_from_arrays(slider_configs, 1, 'Cost')
+            density_normalized = self._normalize_config_from_arrays(slider_configs, 0, 'Density (g/cm³)')
+            cost_normalized = self._normalize_config_from_arrays(slider_configs, 1, 'Specific Cost ($/kg)')
         elif slider_configs is not None and not slider_configs:  # Empty dictionary
             # Use sensible defaults for materials
             density_normalized = {
@@ -131,7 +131,7 @@ class MaterialSelector:
                 'max_val': 0.1,
                 'step': 0.01,
                 'mark_interval': 0.1,
-                'title': 'Density',
+                'title': 'Density (g/cm³)',
                 'default_val': 0.05
             }
             cost_normalized = {
@@ -139,7 +139,7 @@ class MaterialSelector:
                 'max_val': 0.1,
                 'step': 0.01,
                 'mark_interval': 0.1,
-                'title': 'Cost',
+                'title': 'Specific Cost ($/kg)',
                 'default_val': 0.05
             }
         else:
@@ -149,7 +149,7 @@ class MaterialSelector:
                 'max_val': 0.1,
                 'step': 0.01,
                 'mark_interval': 0.1,
-                'title': 'Density',
+                'title': 'Density (g/cm³)',
                 'default_val': None  # No initial value
             }
             cost_normalized = {
@@ -157,7 +157,7 @@ class MaterialSelector:
                 'max_val': 0.1,
                 'step': 0.01,
                 'mark_interval': 0.1,
-                'title': 'Cost',
+                'title': 'Specific Cost ($/kg)',
                 'default_val': None  # No initial value
             }
 
@@ -358,7 +358,7 @@ class MaterialSelector:
                 
                 # Weight percentage column
                 html.Div([
-                    html.P("Weight Percentage:", style={'margin': '0px 0px 5px 0px', 'font-weight': 'bold'}),
+                    html.P("Weight (%):", style={'margin': '0px 0px 5px 0px', 'font-weight': 'bold'}),
                     self._make_weight_fraction_input()
                 ], style={'width': '15%', 'display': 'inline-block', 'vertical-align': 'top', 'padding-right': '25px'}),
                 
@@ -594,7 +594,7 @@ class ActiveMaterialSelector(MaterialSelector):
                 
                 # Weight percentage column (15%)
                 html.Div([
-                    html.P("Weight %:", style={'margin': '0px 0px 5px 0px', 'font-weight': 'bold'}),
+                    html.P("Weight (%):", style={'margin': '0px 0px 5px 0px', 'font-weight': 'bold'}),
                     self._make_weight_fraction_input()
                 ], style={'width': '15%', 'display': 'inline-block', 'vertical-align': 'top', 'padding-right': '15px'}),
                 
