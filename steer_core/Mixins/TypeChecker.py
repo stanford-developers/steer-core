@@ -3,14 +3,10 @@ import pandas as pd
 import numpy as np
 
 
-ALLOWED_REFERENCE = [
-    'Na/Na+',
-    'Li/Li+'
-]
+ALLOWED_REFERENCE = ["Na/Na+", "Li/Li+"]
 
 
 class ValidationMixin:
-
     @staticmethod
     def validate_type(value: Type, expected_type: Type, name: str) -> None:
         """
@@ -31,7 +27,9 @@ class ValidationMixin:
             If the value is not of the expected type.
         """
         if not isinstance(value, expected_type):
-            raise TypeError(f"{name} must be of type {expected_type.__name__}. Provided: {type(value).__name__}.")
+            raise TypeError(
+                f"{name} must be of type {expected_type.__name__}. Provided: {type(value).__name__}."
+            )
 
     @staticmethod
     def validate_percentage(value: float, name: str) -> None:
@@ -54,7 +52,9 @@ class ValidationMixin:
             raise TypeError(f"{name} must be a number. Provided: {value}.")
 
         if not (0 <= value <= 100):
-            raise ValueError(f"{name} must be a percentage between 0 and 100. Provided: {value}.")
+            raise ValueError(
+                f"{name} must be a percentage between 0 and 100. Provided: {value}."
+            )
 
     @staticmethod
     def validate_fraction(value: float, name: str) -> None:
@@ -74,13 +74,13 @@ class ValidationMixin:
             If the value is not a fraction.
         """
         if not (0 <= value <= 1):
-            raise ValueError(f"{name} must be a fraction between 0 and 1. Provided: {value}.")
+            raise ValueError(
+                f"{name} must be a fraction between 0 and 1. Provided: {value}."
+            )
 
     @staticmethod
     def validate_pandas_dataframe(
-        df: pd.DataFrame, 
-        name: str,
-        column_names: list = None
+        df: pd.DataFrame, name: str, column_names: list = None
     ) -> None:
         """
         Validate that the input is a pandas DataFrame.
@@ -103,8 +103,10 @@ class ValidationMixin:
         if column_names is not None:
             missing_columns = [col for col in column_names if col not in df.columns]
             if missing_columns:
-                raise ValueError(f"{name} is missing required columns: {missing_columns}. "
-                                 f"Available columns: {df.columns.tolist()}.")
+                raise ValueError(
+                    f"{name} is missing required columns: {missing_columns}. "
+                    f"Available columns: {df.columns.tolist()}."
+                )
 
     @staticmethod
     def validate_electrochemical_reference(reference: str) -> None:
@@ -124,8 +126,10 @@ class ValidationMixin:
         ValidationMixin.validate_string(reference, "Electrochemical reference")
 
         if reference not in ALLOWED_REFERENCE:
-            raise ValueError(f"Invalid electrochemical reference: {reference}. "
-                             f"Must be one of {ALLOWED_REFERENCE}.")
+            raise ValueError(
+                f"Invalid electrochemical reference: {reference}. "
+                f"Must be one of {ALLOWED_REFERENCE}."
+            )
 
     @staticmethod
     def validate_datum(datum: np.ndarray) -> None:
@@ -144,10 +148,10 @@ class ValidationMixin:
         """
         if type(datum) is not tuple and len(datum) != 3:
             raise ValueError("Datum must be a 3D point with exactly 3 coordinates.")
-        
+
         if not all(isinstance(coord, (int, float)) for coord in datum):
             raise TypeError("All coordinates in datum must be numbers.")
-    
+
     @staticmethod
     def validate_positive_float(value: float, name: str) -> None:
         """
@@ -167,7 +171,7 @@ class ValidationMixin:
         """
         if not isinstance(value, (int, float)):
             raise ValueError(f"{name} must be a positive float. Provided: {value}.")
-        
+
     @staticmethod
     def validate_string(value: str, name: str) -> None:
         """
@@ -187,7 +191,7 @@ class ValidationMixin:
         """
         if not isinstance(value, str):
             raise TypeError(f"{name} must be a string. Provided: {value}.")
-        
+
     @staticmethod
     def validate_two_iterable_of_floats(value: tuple, name: str) -> None:
         """
@@ -207,16 +211,22 @@ class ValidationMixin:
         """
         # Accept both tuples and lists
         if not isinstance(value, (tuple, list)) or len(value) != 2:
-            raise TypeError(f"{name} must be a tuple or list of two numbers. Provided: {value}.")
-        
+            raise TypeError(
+                f"{name} must be a tuple or list of two numbers. Provided: {value}."
+            )
+
         # Check if all values are numeric (int or float)
         if not all(isinstance(v, (int, float)) for v in value):
-            raise TypeError(f"{name} must be a tuple or list of two numbers. Provided: {value}.")
-        
+            raise TypeError(
+                f"{name} must be a tuple or list of two numbers. Provided: {value}."
+            )
+
         # Check if all values are non-negative
         if not all(v >= 0 for v in value):
-            raise ValueError(f"{name} must be a tuple or list of two non-negative numbers. Provided: {value}.")
-        
+            raise ValueError(
+                f"{name} must be a tuple or list of two non-negative numbers. Provided: {value}."
+            )
+
     @staticmethod
     def validate_positive_float_list(value: list, name: str) -> None:
         """
@@ -234,9 +244,12 @@ class ValidationMixin:
         TypeError
             If the value is not a list of positive floats.
         """
-        if not isinstance(value, list) or not all(isinstance(v, (int, float)) and v > 0 for v in value):
-            raise TypeError(f"{name} must be a list of positive floats. Provided: {value}.")
-        
+        if not isinstance(value, list) or not all(
+            isinstance(v, (int, float)) and v > 0 for v in value
+        ):
+            raise TypeError(
+                f"{name} must be a list of positive floats. Provided: {value}."
+            )
+
         if len(value) == 0:
             raise ValueError(f"{name} must not be an empty list. Provided: {value}.")
-        

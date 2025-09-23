@@ -7,11 +7,11 @@ init = root / "steer_core" / "__init__.py"
 version = re.search(r'__version__\s*=\s*"([^"]+)"', init.read_text()).group(1)
 
 setup(
-    name='steer-core',
-    version=version, 
-    description='Modelling energy storage from cell to site - STEER OpenCell Design',
-    author='Nicholas Siemons',
-    author_email='nsiemons@stanford.edu',
+    name="steer-core",
+    version=version,
+    description="Modelling energy storage from cell to site - STEER OpenCell Design",
+    author="Nicholas Siemons",
+    author_email="nsiemons@stanford.edu",
     url="https://github.com/nicholas9182/steer-core/",
     packages=find_packages(),
     include_package_data=True,
@@ -24,7 +24,7 @@ setup(
     ],
     package_data={"steer_core.Data": ["database.db"]},
     scripts=[],
-    classifiers=[ 
+    classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",

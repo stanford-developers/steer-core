@@ -7,6 +7,7 @@ class DataMixin:
     A mixin class to handle data processing and validation for electrode materials.
     Provides methods to calculate properties, check curve directions, and process half-cell curves.
     """
+
     @staticmethod
     def enforce_monotonicity(array: np.ndarray) -> np.ndarray:
         """
@@ -37,4 +38,3 @@ class DataMixin:
             new_array = np.minimum.accumulate(new_array)
 
         return new_array
-

@@ -25,10 +25,10 @@ A_TO_mA = 1e3
 mA_TO_A = 1e-3
 
 # Time units
-S_TO_H = 1/3600
+S_TO_H = 1 / 3600
 H_TO_S = 3600
-S_TO_Y = 1/(3600*24*365)
-Y_TO_S = 3600*24*365
+S_TO_Y = 1 / (3600 * 24 * 365)
+Y_TO_S = 3600 * 24 * 365
 
 # Energy units
 W_TO_KW = 1e-3
