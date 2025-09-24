@@ -260,7 +260,7 @@ def create_slider_config(
             - 'max_vals' (List[float]): Maximum values for each slider (snapped to grid, <= original max)
             - 'step_vals' (List[float]): Calculated step values based on max value magnitude
             - 'input_step_vals' (List[float]): Step values for inputs (same as slider steps)
-            - 'mark_vals' (List[dict]): Mark positions for each slider (position → None mapping)
+            - 'mark_vals' (List[dict]): Mark positions for each slider (string position → empty string mapping)
             - 'grid_slider_vals' (List[float], optional): Property values snapped to slider grid if provided
             - 'grid_input_vals' (List[float], optional): Property values snapped to input grid if provided
 
@@ -341,7 +341,7 @@ def create_slider_config(
             while current_mark <= max_val:
                 # Round to avoid floating-point precision issues
                 rounded_mark = round(current_mark, 10)  # Round to 10 decimal places
-                marks[rounded_mark] = ""  # No label
+                marks[str(rounded_mark)] = ""  # Convert float key to string, no label
                 current_mark += mark_interval
 
                 # Ensure we don't exceed max_val due to floating point precision
@@ -491,7 +491,7 @@ def create_range_slider_config(
             while current <= max_val:
                 # Round to avoid floating-point precision issues
                 rounded_mark = round(current, 10)  # Round to 10 decimal places
-                marks[rounded_mark] = ""  # Empty string for clean appearance
+                marks[str(rounded_mark)] = ""  # Convert float key to string, empty string for clean appearance
                 current += interval
 
         mark_vals.append(marks)

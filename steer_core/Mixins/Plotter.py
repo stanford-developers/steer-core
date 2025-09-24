@@ -3,6 +3,7 @@ from typing import Dict, Any, Tuple, List, Union
 
 
 class PlotterMixin:
+    
     @staticmethod
     def plot_breakdown_sunburst(
         breakdown_dict: Dict[str, Any],
