@@ -181,6 +181,7 @@ class SliderWithTextInput:
             disabled=self.slider_disable,
             marks=slider_marks,
             updatemode="mouseup",
+            tooltip={"placement": "right", "always_visible": False}
         )
 
     def _make_input(self):

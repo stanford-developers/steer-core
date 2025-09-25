@@ -194,6 +194,7 @@ class RangeSliderWithTextInput:
                 )
             },
             updatemode="mouseup",
+            tooltip={"placement": "right", "always_visible": False}
         )
 
     def _make_start_input(self):
