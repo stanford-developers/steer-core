@@ -31,3 +31,4 @@ def calculate_all_properties(func):
         return result
 
     return wrapper
+

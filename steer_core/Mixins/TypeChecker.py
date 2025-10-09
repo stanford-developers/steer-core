@@ -1,12 +1,37 @@
 from typing import Type
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
 
 
 ALLOWED_REFERENCE = ["Na/Na+", "Li/Li+"]
 
 
 class ValidationMixin:
+
+    @staticmethod
+    def validate_plotly_trace(value: object, name: str) -> None:
+        """
+        Validate that a value is a Plotly trace object.
+
+        Parameters
+        ----------
+        value : object
+            The value to validate.
+        name : str
+            The name of the parameter for error messages.
+
+        Raises
+        ------
+        TypeError
+            If the value is not a Plotly trace object.
+        """
+        return (
+            hasattr(value, '__module__') and
+            value.__module__ and 
+            value.__module__.startswith('plotly.graph_objs')
+        )
+        
     @staticmethod
     def validate_type(value: Type, expected_type: Type, name: str) -> None:
         """
@@ -27,9 +52,7 @@ class ValidationMixin:
             If the value is not of the expected type.
         """
         if not isinstance(value, expected_type):
-            raise TypeError(
-                f"{name} must be of type {expected_type.__name__}. Provided: {type(value).__name__}."
-            )
+            raise TypeError(f"{name} must be of type {expected_type.__name__}. Provided: {type(value).__name__}.")
 
     @staticmethod
     def validate_percentage(value: float, name: str) -> None:
