@@ -34,6 +34,7 @@ Y_TO_S = 3600 * 24 * 365
 
 # Energy units
 W_TO_KW = 1e-3
+J_TO_WH = 1 / 3600
 
 # Angle units
 DEG_TO_RAD = 0.017453292519943295

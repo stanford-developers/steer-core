@@ -6,7 +6,7 @@ slider configurations based on parameter ranges.
 """
 
 import math
-from typing import List, Union, Dict
+from typing import List
 
 
 def calculate_slider_steps(

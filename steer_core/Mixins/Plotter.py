@@ -4,6 +4,48 @@ from typing import Dict, Any, Tuple, List, Union
 
 class PlotterMixin:
     
+    SCATTER_X_AXIS = dict(
+        showgrid=True,
+        gridcolor="rgba(128, 128, 128, 0.2)",
+        gridwidth=1,
+        zeroline=True,
+        zerolinecolor="rgba(0, 0, 0, 0.5)",
+        zerolinewidth=1,
+    )
+
+    SCATTER_Y_AXIS = dict(
+        showgrid=True,
+        gridcolor="rgba(128, 128, 128, 0.2)",
+        gridwidth=1,
+        zeroline=True,
+        zerolinecolor="rgba(0, 0, 0, 0.5)",
+        zerolinewidth=1,
+    )
+
+    SCHEMATIC_X_AXIS = dict(
+        zeroline=False,
+        scaleanchor="y",
+        title="X (mm)"
+    )
+
+    SCHEMATIC_Y_AXIS = dict(
+        zeroline=False,
+        title="Y (mm)"
+    )
+
+    SCHEMATIC_Z_AXIS = dict(
+        zeroline=False,
+        title="Z (mm)"
+    )
+
+    BOTTOM_LEGEND = dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.3,
+        xanchor="center",
+        x=0.5,
+    )
+
     @staticmethod
     def plot_breakdown_sunburst(
         breakdown_dict: Dict[str, Any],
@@ -147,3 +189,6 @@ class PlotterMixin:
         )
 
         return fig
+
+
+    
