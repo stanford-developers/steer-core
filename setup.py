@@ -21,6 +21,7 @@ setup(
         "datetime==5.5",
         "scipy==1.15.3",
         "plotly==6.2.0",
+        "dash==2.18.1",
     ],
     package_data={"steer_core.Data": ["database.db"]},
     scripts=[],

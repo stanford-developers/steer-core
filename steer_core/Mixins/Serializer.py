@@ -41,3 +41,5 @@ class SerializerMixin:
         decoded = base64.b64decode(String.encode("utf-8"))
         obj = deepcopy(loads(decoded))
         return obj
+
+
