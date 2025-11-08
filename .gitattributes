@@ -1,0 +1,2 @@
+steer_core/Data/database.db filter=lfs diff=lfs merge=lfs -text
+/steer_core/Data/database.db filter=lfs diff=lfs merge=lfs -text

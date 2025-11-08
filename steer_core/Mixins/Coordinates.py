@@ -2,12 +2,102 @@ import numpy as np
 import pandas as pd
 from typing import Tuple
 
+from shapely import Polygon
+
 
 class CoordinateMixin:
     """
     A class to manage and manipulate 3D coordinates.
     Provides methods for rotation, area calculation, and coordinate ordering.
     """
+
+    @staticmethod
+    def _calculate_segment_center_line(x_coords: np.ndarray, z_coords: np.ndarray) -> np.ndarray:
+        """
+        Calculate center line for a single segment of coordinates.
+        
+        Parameters
+        ----------
+        x_coords : np.ndarray
+            X coordinates for the segment
+        z_coords : np.ndarray
+            Z coordinates for the segment
+            
+        Returns
+        -------
+        np.ndarray
+            Array containing start and end points of the center line [[min_x, mean_z], [max_x, mean_z]]
+        """
+        min_x = np.nanmin(x_coords)
+        max_x = np.nanmax(x_coords)
+        min_z = np.nanmin(z_coords)
+        max_z = np.nanmax(z_coords)
+        mean_z = max_z - (max_z - min_z) / 2
+        
+        return np.array([[min_x, mean_z], [max_x, mean_z]])
+
+    @staticmethod
+    def get_xz_center_line(coordinates: np.ndarray) -> np.ndarray:
+        """
+        Generate center line(s) for coordinate data, handling both single and multi-segment polygons.
+        
+        Parameters
+        ----------
+        coordinates : np.ndarray
+            Array of 3D coordinates with shape (N, 3) where columns are [x, y, z].
+            NaN values in x or z coordinates indicate breaks between polygon segments.
+            
+        Returns
+        -------
+        np.ndarray
+            For single polygon: Array with shape (2, 2) containing start and end points.
+            For multiple segments: Array with center lines for each segment separated by [NaN, NaN].
+        """
+        x_coords = coordinates[:, 0]
+        z_coords = coordinates[:, 2]
+        
+        x_is_nan = np.isnan(x_coords)
+        
+        if np.any(x_is_nan):
+            # Handle multiple segments separated by NaN values
+            result_points = []
+            
+            # Find NaN indices to split the segments
+            nan_indices = np.where(x_is_nan)[0]
+            start_idx = 0
+            
+            # Process each segment
+            for nan_idx in nan_indices:
+                if nan_idx > start_idx:
+                    segment_x = x_coords[start_idx:nan_idx]
+                    segment_z = z_coords[start_idx:nan_idx]
+                    
+                    # Calculate center line for this segment if it has valid points
+                    if len(segment_x) > 0 and not np.all(np.isnan(segment_x)):
+                        segment_line = CoordinateMixin._calculate_segment_center_line(segment_x, segment_z)
+                        result_points.extend(segment_line.tolist())
+                        result_points.append([np.nan, np.nan])  # Add separator
+                
+                start_idx = nan_idx + 1
+            
+            # Handle the last segment if it exists
+            if start_idx < len(x_coords):
+                segment_x = x_coords[start_idx:]
+                segment_z = z_coords[start_idx:]
+                
+                if len(segment_x) > 0 and not np.all(np.isnan(segment_x)):
+                    segment_line = CoordinateMixin._calculate_segment_center_line(segment_x, segment_z)
+                    result_points.extend(segment_line.tolist())
+            
+            # Remove trailing NaN separator if it exists
+            if result_points and np.isnan(result_points[-1][0]):
+                result_points.pop()
+            
+            return np.array(result_points) if result_points else np.array([]).reshape(0, 2)
+        
+        else:
+            # Single polygon - use helper function
+            return CoordinateMixin._calculate_segment_center_line(x_coords, z_coords)
 
     @staticmethod
     def rotate_coordinates(
@@ -241,7 +331,134 @@ class CoordinateMixin:
 
     @staticmethod
     def extrude_footprint(
-        x: np.ndarray, y: np.ndarray, datum: np.ndarray, thickness: float
+        x: np.ndarray, 
+        y: np.ndarray, 
+        datum: np.ndarray, 
+        thickness: float
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Extrude a 2D footprint to 3D, handling both single and multi-segment polygons.
+        
+        Parameters
+        ----------
+        x : np.ndarray
+            Array of x coordinates. NaN values indicate segment separators.
+        y : np.ndarray
+            Array of y coordinates. NaN values indicate segment separators.
+        datum : np.ndarray
+            Datum point for extrusion (shape (3,))
+        thickness : float
+            Thickness of the extrusion
+            
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+            Arrays of x, y, z coordinates and side labels, with NaN separators between segments
+        """
+        if not np.isnan(x).any() and not np.isnan(y).any():
+            return CoordinateMixin._extrude_single_footprint(x, y, datum, thickness)
+        
+        # Process segmented coordinates
+        segments = CoordinateMixin._extract_coordinate_segments(x, y)
+        extruded_sections = []
+        
+        for segment_x, segment_y in segments:
+            if len(segment_x) > 0 and not np.all(np.isnan(segment_x)):
+                result = CoordinateMixin._extrude_single_footprint(
+                    segment_x, segment_y, datum, thickness
+                )
+                extruded_sections.append(result)
+        
+        return CoordinateMixin._concatenate_with_separators(extruded_sections)
+
+    @staticmethod
+    def _extract_coordinate_segments(x: np.ndarray, y: np.ndarray, unify_xy: bool = False) -> list:
+        """
+        Extract coordinate segments separated by NaN values.
+        
+        Parameters
+        ----------
+        x : np.ndarray
+            X coordinates with NaN separators
+        y : np.ndarray
+            Y coordinates with NaN separators
+            
+        Returns
+        -------
+        list
+            List of (segment_x, segment_y) tuples
+        """
+        segments = []
+        x_is_nan = np.isnan(x)
+        nan_indices = np.where(x_is_nan)[0]
+        start_idx = 0
+        
+        # Process each segment between NaN values
+        for nan_idx in nan_indices:
+            if nan_idx > start_idx:
+                segments.append((x[start_idx:nan_idx], y[start_idx:nan_idx]))
+            start_idx = nan_idx + 1
+        
+        # Handle the last segment if it exists
+        if start_idx < len(x):
+            segments.append((x[start_idx:], y[start_idx:]))
+            
+        if unify_xy:
+            unified_segments = []
+            for i in range(len(segments)):
+                segment_x, segment_y = segments[i]
+                xy_array = np.column_stack((segment_x, segment_y))
+                unified_segments.append(xy_array)
+            return np.array(unified_segments)
+        else:
+            return segments
+
+    @staticmethod
+    def _concatenate_with_separators(sections: list) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Concatenate extruded sections with NaN separators.
+        
+        Parameters
+        ----------
+        sections : list
+            List of (x_ext, y_ext, z_ext, side_ext) tuples
+            
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+            Concatenated arrays with NaN separators
+        """
+        if not sections:
+            return np.array([]), np.array([]), np.array([]), np.array([])
+        
+        x_parts, y_parts, z_parts, side_parts = [], [], [], []
+        
+        for i, (x_ext, y_ext, z_ext, side_ext) in enumerate(sections):
+            x_parts.append(x_ext)
+            y_parts.append(y_ext)
+            z_parts.append(z_ext)
+            side_parts.append(side_ext)
+            
+            # Add NaN separators between segments (except for the last one)
+            if i < len(sections) - 1:
+                x_parts.append(np.array([np.nan]))
+                y_parts.append(np.array([np.nan]))
+                z_parts.append(np.array([np.nan]))
+                side_parts.append(np.array([None], dtype=object))
+        
+        return (
+            np.concatenate(x_parts),
+            np.concatenate(y_parts), 
+            np.concatenate(z_parts),
+            np.concatenate(side_parts)
+        )
+
+    @staticmethod
+    def _extrude_single_footprint(
+        x: np.ndarray, 
+        y: np.ndarray, 
+        datum: np.ndarray, 
+        thickness: float
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Extrude the 2D footprint to 3D and label each point with its side ('a' or 'b'), with 'a' being the top side and 'b' the bottom side.
@@ -272,6 +489,102 @@ class CoordinateMixin:
         side_full = np.array(["a"] * len(x) + ["b"] * len(x))
 
         return x_full, y_full, z_full, side_full
+
+    @staticmethod
+    def get_coordinate_intersection(
+            coords1: np.ndarray,
+            coords2: np.ndarray
+    ) -> float:
+        """Calculate the intersection area between two sets of coordinates"""
+        polygon1 = Polygon(coords1)
+        polygon2 = Polygon(coords2)
+        intersection = polygon1.intersection(polygon2)
+        return intersection.area
+
+    @staticmethod
+    def insert_gaps_with_nans(
+        data: np.ndarray, 
+        column_index: int, 
+        tolerance_multiplier: float = 2.0
+    ) -> np.ndarray:
+        """
+        Insert rows of NaNs when gaps in a specified column exceed a tolerance threshold.
+        
+        Parameters
+        ----------
+        data : np.ndarray
+            Input array with shape (N, M) where N is number of rows and M is number of columns
+        column_index : int
+            Index of the column to analyze for gaps (0-based indexing)
+        tolerance_multiplier : float, optional
+            Multiplier for average gap to determine tolerance threshold, by default 2.0
+            
+        Returns
+        -------
+        np.ndarray
+            Array with NaN rows inserted where gaps exceed the tolerance
+            
+        Raises
+        ------
+        ValueError
+            If column_index is out of bounds for the array
+        IndexError
+            If data array is empty or has insufficient dimensions
+            
+        Examples
+        --------
+        >>> data = np.array([[1, 10], [2, 20], [5, 50], [6, 60]])
+        >>> result = CoordinateMixin.insert_gaps_with_nans(data, column_index=0)
+        >>> # Will insert NaN row between [2, 20] and [5, 50] if gap of 3 exceeds tolerance
+        """
+        if data.size == 0:
+            return data.copy()
+            
+        if len(data.shape) != 2:
+            raise ValueError("Input array must be 2-dimensional")
+            
+        if column_index < 0 or column_index >= data.shape[1]:
+            raise ValueError(f"column_index {column_index} is out of bounds for array with {data.shape[1]} columns")
+        
+        if data.shape[0] < 2:
+            return data.copy()
+        
+        # Extract the column values
+        column_values = data[:, column_index]
+        
+        # Remove NaN values for gap calculation
+        valid_values = column_values[~np.isnan(column_values)]
+        
+        if len(valid_values) < 2:
+            return data.copy()
+        
+        # Calculate gaps between consecutive values
+        gaps = np.diff(valid_values)
+        
+        # Calculate average gap and tolerance
+        average_gap = np.mean(np.abs(gaps))
+        tolerance = average_gap * tolerance_multiplier
+        
+        # Find positions where gaps exceed tolerance in original array
+        result_rows = []
+        
+        for i in range(len(data)):
+            result_rows.append(data[i])
+            
+            # Check if we should insert a gap after this row
+            if i < len(data) - 1:
+                current_val = column_values[i]
+                next_val = column_values[i + 1]
+                
+                # Only check gap if both values are not NaN
+                if not (np.isnan(current_val) or np.isnan(next_val)):
+                    gap = abs(next_val - current_val)
+                    if gap > tolerance:
+                        # Insert a row of NaNs
+                        nan_row = np.full(data.shape[1], np.nan)
+                        result_rows.append(nan_row)
+        
+        return np.array(result_rows)
 
     @staticmethod
     def remove_skip_coat_area(
@@ -359,3 +672,5 @@ class CoordinateMixin:
                 y_result.append(np.nan)
 
         return np.array(x_result, dtype=float), np.array(y_result, dtype=float)
+
+
