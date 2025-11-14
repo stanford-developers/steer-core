@@ -259,6 +259,26 @@ class DataManager:
         )
 
         return data
+    
+    def get_tape_materials(self, most_recent: bool = True) -> pd.DataFrame:
+        """
+        Retrieves tape materials from the database.
+
+        :param most_recent: If True, returns only the most recent entry.
+        :return: DataFrame with tape materials.
+        """
+        data = (
+            self.get_data(table_name="tape_materials")
+            .groupby("name", group_keys=False)
+            .apply(
+                lambda x: x.sort_values("date", ascending=False).head(1)
+                if most_recent
+                else x
+            )
+            .reset_index(drop=True)
+        )
+
+        return data
 
     @staticmethod
     def read_half_cell_curve(half_cell_path) -> pd.DataFrame:
