@@ -1,5 +1,6 @@
 import plotly.graph_objects as go
 from typing import Dict, Any, Tuple, List, Union
+from steer_core.Mixins.Coordinates import CoordinateMixin
 
 
 class PlotterMixin:
@@ -45,6 +46,86 @@ class PlotterMixin:
         xanchor="center",
         x=0.5,
     )
+
+    @staticmethod
+    def create_component_trace(
+            components, 
+            coord_attr, 
+            name, 
+            line_width, 
+            color_func, 
+            unit_conversion_factor,
+            order_clockwise: str = None
+            ):
+        """
+        Create a single trace for a component or group of components with NaN separators.
+        
+        Parameters
+        ----------
+        components : list or object
+            Single component or list of components to process
+        coord_attr : str
+            Attribute path for coordinates (e.g., '_a_side_coating_coordinates')
+        name : str
+            Name for the trace
+        line_width : float
+            Width of the trace line
+        color_func : callable
+            Function to get color from component
+        unit_conversion_factor : float
+            Factor to convert coordinates to desired units
+        order_clockwise : str or None, optional
+            Plane for clockwise ordering ('xy', 'xz', 'yz') or None to disable, by default None
+            
+        Returns
+        -------
+        go.Scatter or None
+            Plotly scatter trace or None if no valid coordinates
+        """
+        # Convert single component to list for uniform processing
+        if not isinstance(components, list):
+            components = [components]
+            
+        if not components:
+            return None
+            
+        # Extract coordinates using nested getattr for dot notation
+        coord_arrays = []
+        for component in components:
+            coords = component
+            # Handle nested attributes like '_current_collector._body_coordinates'
+            for attr_part in coord_attr.split('.'):
+                coords = getattr(coords, attr_part)
+                
+            if coords is not None and len(coords) > 0:
+                coord_arrays.append(coords)
+
+        if not coord_arrays:
+            return None
+        
+        # Concatenate coordinates with NaN separators
+        combined_coords = CoordinateMixin.concat_with_nan_separators(coord_arrays)
+        
+        # Order coordinates clockwise if requested
+        if order_clockwise is not None:
+            combined_coords = CoordinateMixin.order_coordinates_clockwise_numpy(combined_coords, plane=order_clockwise)
+        
+        # Convert to mm and extract y,z coordinates directly (avoid DataFrame overhead)
+        y_coords = combined_coords[:, 1] * unit_conversion_factor
+        z_coords = combined_coords[:, 2] * unit_conversion_factor
+        
+        # Create trace
+        return go.Scatter(
+            x=y_coords,
+            y=z_coords,
+            mode="lines",
+            name=name,
+            line={'width': line_width, 'color': "black"},
+            fill="toself",
+            fillcolor=color_func(components[0]),
+            legendgroup=name,
+            showlegend=True,
+        )
 
     @staticmethod
     def plot_breakdown_sunburst(
