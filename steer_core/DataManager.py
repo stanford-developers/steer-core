@@ -7,6 +7,7 @@ from steer_core.Constants.Units import *
 
 
 class DataManager:
+    
     def __init__(self):
         with importlib.resources.path("steer_core.Data", "database.db") as db_path:
             self._db_path = db_path
