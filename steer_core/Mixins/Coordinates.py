@@ -130,7 +130,10 @@ class CoordinateMixin:
 
     @staticmethod
     def rotate_coordinates(
-        coords: np.ndarray, axis: str, angle: float, center: tuple = None
+        coords: np.ndarray, 
+        axis: str, 
+        angle: float, 
+        center: tuple = None
     ) -> np.ndarray:
         """
         Rotate a (N, 3) NumPy array of 3D coordinates around the specified axis.
@@ -240,9 +243,52 @@ class CoordinateMixin:
             The width of the square.
         y_width : float
             The height of the square.
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Tuple containing x and y coordinate arrays defining the square/rectangle
         """
-        x_coords = [x, x, x + x_width, x + x_width, x]
-        y_coords = [y, y + y_width, y + y_width, y, y]
+        x_coords = np.array([x, x, x + x_width, x + x_width, x])
+        y_coords = np.array([y, y + y_width, y + y_width, y, y])
+        return x_coords, y_coords
+
+    @staticmethod
+    def build_circle_array(
+        center_x: float, center_y: float, radius: float, num_points: int = 64, anticlockwise: bool = True
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Build a NumPy array representing a circle defined by its center and radius.
+
+        Parameters
+        ----------
+        center_x : float
+            The x-coordinate of the circle center.
+        center_y : float
+            The y-coordinate of the circle center.
+        radius : float
+            The radius of the circle.
+        num_points : int, optional
+            Number of points to use for the circle approximation, by default 64
+        anticlockwise : bool, optional
+            If True, points are ordered anticlockwise; if False, clockwise, by default True
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Tuple containing x and y coordinate arrays defining the circle
+        """
+        # Generate angles from 0 to 2π
+        angles = np.linspace(0, 2 * np.pi, num_points + 1)
+        
+        # Reverse angles for clockwise direction
+        if not anticlockwise:
+            angles = angles[::-1]
+        
+        # Calculate x and y coordinates
+        x_coords = center_x + radius * np.cos(angles)
+        y_coords = center_y + radius * np.sin(angles)
+        
         return x_coords, y_coords
 
     @staticmethod
