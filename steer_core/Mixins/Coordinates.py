@@ -136,25 +136,39 @@ class CoordinateMixin:
         center: tuple = None
     ) -> np.ndarray:
         """
-        Rotate a (N, 3) NumPy array of 3D coordinates around the specified axis.
+        Rotate a NumPy array of coordinates around the specified axis.
+        Can handle 2D coordinates (N, 2) for x, y or 3D coordinates (N, 3) for x, y, z.
         Can handle coordinates with None values (preserves None positions).
 
-        :param coords: NumPy array of shape (N, 3), where columns are x, y, z
-        :param axis: Axis to rotate around ('x', 'y', or 'z')
+        :param coords: NumPy array of shape (N, 2) for 2D or (N, 3) for 3D coordinates
+        :param axis: Axis to rotate around ('x', 'y', or 'z'). For 2D arrays, only 'z' is valid.
         :param angle: Angle in degrees
-        :param center: Point to rotate around as (x, y, z) tuple. If None, rotates around origin.
-        :return: Rotated NumPy array of shape (N, 3)
+        :param center: Point to rotate around. For 2D: (x, y) tuple. For 3D: (x, y, z) tuple. 
+                      If None, rotates around origin.
+        :return: Rotated NumPy array with same shape as input
         """
-        if coords.shape[1] != 3:
+        # Check if 2D or 3D coordinates
+        is_2d = coords.shape[1] == 2
+        is_3d = coords.shape[1] == 3
+        
+        if not (is_2d or is_3d):
             raise ValueError(
-                "Input array must have shape (N, 3) for x, y, z coordinates"
+                "Input array must have shape (N, 2) for 2D or (N, 3) for 3D coordinates"
+            )
+        
+        # For 2D arrays, only z-axis rotation is valid
+        if is_2d and axis != 'z':
+            raise ValueError(
+                "For 2D coordinates (x, y), only 'z' axis rotation is supported"
             )
 
         # Validate center parameter
         if center is not None:
-            if not isinstance(center, (tuple, list)) or len(center) != 3:
+            expected_len = 2 if is_2d else 3
+            if not isinstance(center, (tuple, list)) or len(center) != expected_len:
+                coord_type = "(x, y)" if is_2d else "(x, y, z)"
                 raise ValueError(
-                    "Center must be a tuple or list of 3 coordinates (x, y, z)"
+                    f"Center must be a tuple or list of {expected_len} coordinates {coord_type}"
                 )
             if not all(isinstance(coord, (int, float)) for coord in center):
                 raise TypeError("All center coordinates must be numbers")
@@ -204,10 +218,11 @@ class CoordinateMixin:
         """
         Rotate coordinates around a specified center point.
 
-        :param coords: NumPy array of shape (N, 3) with valid coordinates
+        :param coords: NumPy array of shape (N, 2) or (N, 3) with valid coordinates
         :param axis: Axis to rotate around ('x', 'y', or 'z')
         :param angle: Angle in degrees
-        :param center: Center point as np.array of shape (3,). If None, rotates around origin.
+        :param center: Center point as np.array. Shape (2,) for 2D or (3,) for 3D. 
+                      If None, rotates around origin.
         :return: Rotated coordinates
         """
         if center is None:
@@ -294,13 +309,37 @@ class CoordinateMixin:
     @staticmethod
     def order_coordinates_clockwise(df: pd.DataFrame, plane="xy") -> pd.DataFrame:
 
+        df = df.copy()
+
         axis_1 = plane[0]
         axis_2 = plane[1]
 
-        cx = df[axis_1].mean()
-        cy = df[axis_2].mean()
+        # Find column names that match the axis (case-insensitive, with or without units)
+        def find_column(axis_char: str) -> str:
+            axis_char_lower = axis_char.lower()
+            # First try exact match
+            if axis_char in df.columns:
+                return axis_char
+            # Try lowercase
+            if axis_char_lower in df.columns:
+                return axis_char_lower
+            # Try uppercase
+            if axis_char.upper() in df.columns:
+                return axis_char.upper()
+            # Try with units pattern like "X (mm)", "x (mm)", etc.
+            for col in df.columns:
+                col_stripped = col.split()[0].lower() if ' ' in col else col.lower()
+                if col_stripped == axis_char_lower:
+                    return col
+            raise KeyError(f"Could not find column for axis '{axis_char}' in dataframe columns: {list(df.columns)}")
+        
+        axis_1_col = find_column(axis_1)
+        axis_2_col = find_column(axis_2)
 
-        angles = np.arctan2(df[axis_2] - cy, df[axis_1] - cx)
+        cx = df[axis_1_col].mean()
+        cy = df[axis_2_col].mean()
+
+        angles = np.arctan2(df[axis_2_col] - cy, df[axis_1_col] - cx)
 
         df["angle"] = angles
 
@@ -533,19 +572,35 @@ class CoordinateMixin:
     ) -> np.ndarray:
         """
         Rotate coordinates without None values using rotation matrices.
+        Handles both 2D (N, 2) and 3D (N, 3) coordinate arrays.
+        
+        :param coords: NumPy array of shape (N, 2) or (N, 3)
+        :param axis: Axis to rotate around ('x', 'y', or 'z')
+        :param angle: Angle in degrees
+        :return: Rotated coordinates with same shape as input
         """
         angle_rad = np.radians(angle)
         cos_a = np.cos(angle_rad)
         sin_a = np.sin(angle_rad)
+        
+        is_2d = coords.shape[1] == 2
 
-        if axis == "x":
-            R = np.array([[1, 0, 0], [0, cos_a, -sin_a], [0, sin_a, cos_a]])
-        elif axis == "y":
-            R = np.array([[cos_a, 0, sin_a], [0, 1, 0], [-sin_a, 0, cos_a]])
-        elif axis == "z":
-            R = np.array([[cos_a, -sin_a, 0], [sin_a, cos_a, 0], [0, 0, 1]])
+        if is_2d:
+            # For 2D coordinates, only z-axis rotation applies (rotation in xy plane)
+            if axis != 'z':
+                raise ValueError("For 2D coordinates, only 'z' axis rotation is supported")
+            # 2D rotation matrix
+            R = np.array([[cos_a, -sin_a], [sin_a, cos_a]])
         else:
-            raise ValueError("Axis must be 'x', 'y', or 'z'.")
+            # 3D rotation matrices
+            if axis == "x":
+                R = np.array([[1, 0, 0], [0, cos_a, -sin_a], [0, sin_a, cos_a]])
+            elif axis == "y":
+                R = np.array([[cos_a, 0, sin_a], [0, 1, 0], [-sin_a, 0, cos_a]])
+            elif axis == "z":
+                R = np.array([[cos_a, -sin_a, 0], [sin_a, cos_a, 0], [0, 0, 1]])
+            else:
+                raise ValueError("Axis must be 'x', 'y', or 'z'.")
 
         return coords @ R.T
 

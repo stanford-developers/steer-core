@@ -5,6 +5,7 @@ from copy import deepcopy
 
 
 class SerializerMixin:
+    
     def serialize(self) -> str:
         """
         Serialize an object to a string representation.

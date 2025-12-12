@@ -36,6 +36,7 @@ class PlotterMixin:
 
     SCHEMATIC_Z_AXIS = dict(
         zeroline=False,
+        scaleanchor="x",
         title="Z (mm)"
     )
 
@@ -55,7 +56,8 @@ class PlotterMixin:
             line_width, 
             color_func, 
             unit_conversion_factor,
-            order_clockwise: str = None
+            order_clockwise: str = None,
+            gl: bool = False
             ):
         """
         Create a single trace for a component or group of components with NaN separators.
@@ -115,17 +117,30 @@ class PlotterMixin:
         z_coords = combined_coords[:, 2] * unit_conversion_factor
         
         # Create trace
-        return go.Scatter(
-            x=y_coords,
-            y=z_coords,
-            mode="lines",
-            name=name,
-            line={'width': line_width, 'color': "black"},
-            fill="toself",
-            fillcolor=color_func(components[0]),
-            legendgroup=name,
-            showlegend=True,
-        )
+        if gl:
+            return go.Scattergl(
+                x=y_coords,
+                y=z_coords,
+                mode="lines",
+                name=name,
+                line={'width': line_width, 'color': "black"},
+                fill="toself",
+                fillcolor=color_func(components[0]),
+                legendgroup=name,
+                showlegend=True,
+            )
+        else:
+            return go.Scatter(
+                x=y_coords,
+                y=z_coords,
+                mode="lines",
+                name=name,
+                line={'width': line_width, 'color': "black"},
+                fill="toself",
+                fillcolor=color_func(components[0]),
+                legendgroup=name,
+                showlegend=True,
+            )
 
     @staticmethod
     def plot_breakdown_sunburst(
@@ -133,6 +148,7 @@ class PlotterMixin:
         title: str = "Breakdown",
         root_label: str = "Total",
         unit: str = "",
+        colorway: List[str] = None,
         **kwargs,
     ) -> go.Figure:
         """
@@ -149,12 +165,22 @@ class PlotterMixin:
             Label for the root node. Defaults to "Total".
         unit : str, optional
             Unit string to display in hover text (e.g., "g", "kg", "%"). Defaults to "".
+        colorway : List[str], optional
+            List of colors to use for the inner ring. If None, uses Plotly's default colorway.
+            Defaults to None.
 
         Returns
         -------
         go.Figure
             Plotly sunburst figure
         """
+        
+        # Default Plotly colorway if none provided
+        if colorway is None:
+            colorway = [
+                '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A',
+                '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'
+            ]
 
         def _flatten_breakdown_values(data: Dict[str, Any]) -> List[float]:
             """Recursively flatten all numeric values from nested breakdown dictionary"""
@@ -177,13 +203,14 @@ class PlotterMixin:
             return total
 
         def _prepare_sunburst_data(
-            data: Dict[str, Any], parent_id: str = "", current_path: str = ""
-        ) -> Tuple[List[str], List[str], List[str], List[float]]:
+            data: Dict[str, Any], parent_id: str = "", current_path: str = "", depth: int = 1
+        ) -> Tuple[List[str], List[str], List[str], List[float], List[int]]:
             """Recursively prepare data for sunburst plot with proper hierarchy"""
             ids = []
             labels = []
             parents = []
             values = []
+            depths = []
 
             for key, value in data.items():
                 # Create unique ID for this node
@@ -192,6 +219,7 @@ class PlotterMixin:
                 ids.append(node_id)
                 labels.append(key)
                 parents.append(parent_id)
+                depths.append(depth)
 
                 if isinstance(value, dict):
                     # This is a nested dictionary - calculate its total value
@@ -204,8 +232,9 @@ class PlotterMixin:
                         nested_labels,
                         nested_parents,
                         nested_values,
+                        nested_depths,
                     ) = _prepare_sunburst_data(
-                        value, parent_id=node_id, current_path=node_id
+                        value, parent_id=node_id, current_path=node_id, depth=depth + 1
                     )
 
                     # Add nested data to our lists
@@ -213,18 +242,19 @@ class PlotterMixin:
                     labels.extend(nested_labels)
                     parents.extend(nested_parents)
                     values.extend(nested_values)
+                    depths.extend(nested_depths)
 
                 elif isinstance(value, (int, float)):
                     # This is a leaf node with a numeric value
                     values.append(float(value))
 
-            return ids, labels, parents, values
+            return ids, labels, parents, values, depths
 
         # Calculate total value for root node
         total_value = _calculate_subtotal(breakdown_dict)
 
         # Prepare hierarchical data starting with root
-        ids, labels, parents, values = _prepare_sunburst_data(
+        ids, labels, parents, values, depths = _prepare_sunburst_data(
             breakdown_dict, parent_id=""
         )
 
@@ -233,11 +263,73 @@ class PlotterMixin:
         labels.insert(0, root_label)
         parents.insert(0, "")
         values.insert(0, total_value)
+        depths.insert(0, 0)
 
         # Update parent references to point to root
         for i in range(1, len(parents)):
             if parents[i] == "":
                 parents[i] = root_label
+
+        # Generate colors based on alphabetical ordering and depth
+        def _hex_to_rgb(hex_color: str) -> Tuple[int, int, int]:
+            """Convert hex color to RGB tuple"""
+            hex_color = hex_color.lstrip('#')
+            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        
+        def _rgb_to_hex(rgb: Tuple[int, int, int]) -> str:
+            """Convert RGB tuple to hex color"""
+            return '#{:02x}{:02x}{:02x}'.format(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+        
+        def _lighten_color(hex_color: str, factor: float) -> str:
+            """Lighten a color by blending with white. Factor 0=original, 1=white"""
+            r, g, b = _hex_to_rgb(hex_color)
+            # Blend with white (255, 255, 255)
+            r = r + (255 - r) * factor
+            g = g + (255 - g) * factor
+            b = b + (255 - b) * factor
+            return _rgb_to_hex((r, g, b))
+        
+        # Get first-level keys (children of root) and sort alphabetically
+        first_level_keys = sorted([key for key in breakdown_dict.keys()])
+        
+        # Assign base colors to first-level keys
+        key_to_base_color = {}
+        for i, key in enumerate(first_level_keys):
+            key_to_base_color[key] = colorway[i % len(colorway)]
+        
+        # Assign colors to all nodes
+        marker_colors = []
+        max_depth = max(depths) if depths else 0
+        
+        for i, (node_id, label, parent, depth) in enumerate(zip(ids, labels, parents, depths)):
+            if depth == 0:
+                # Root node - use neutral color
+                marker_colors.append('#CCCCCC')
+            elif depth == 1:
+                # First level - use assigned base color
+                marker_colors.append(key_to_base_color[label])
+            else:
+                # Deeper levels - find the first-level ancestor and lighten its color
+                # Trace back through parents to find first-level ancestor
+                current_parent = parent
+                ancestor_label = None
+                
+                for j, (check_id, check_label, check_depth) in enumerate(zip(ids, labels, depths)):
+                    if check_id == current_parent:
+                        if check_depth == 1:
+                            ancestor_label = check_label
+                            break
+                        current_parent = parents[j]
+                
+                if ancestor_label and ancestor_label in key_to_base_color:
+                    base_color = key_to_base_color[ancestor_label]
+                    # Lighten based on depth (depth 2 gets 0.3, depth 3 gets 0.5, depth 4 gets 0.7, etc.)
+                    lighten_factor = 0.2 + (depth - 1) * 0.25
+                    lighten_factor = min(lighten_factor, 0.85)  # Cap at 0.85 to avoid too pale
+                    marker_colors.append(_lighten_color(base_color, lighten_factor))
+                else:
+                    # Fallback to neutral color
+                    marker_colors.append('#DDDDDD')
 
         # Create custom hover text with percentages
         hover_text = []
@@ -262,6 +354,7 @@ class PlotterMixin:
                 branchvalues="total",
                 hovertemplate="%{customdata}<extra></extra>",
                 customdata=hover_text,
+                marker=dict(colors=marker_colors),
             )
         )
 
