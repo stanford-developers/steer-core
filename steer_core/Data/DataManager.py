@@ -1,15 +1,20 @@
 import sqlite3 as sql
 from pathlib import Path
+from typing import TypeVar
 import pandas as pd
 import importlib.resources
 
 from steer_core.Constants.Units import *
+from steer_core.Mixins.Serializer import SerializerMixin
+
+
+T = TypeVar('T', bound='SerializerMixin')
 
 
 class DataManager:
     
     def __init__(self):
-        with importlib.resources.path("steer_core.Data", "database.db") as db_path:
+        with importlib.resources.path("steer_opencell_data", "database.db") as db_path:
             self._db_path = db_path
             self._connection = sql.connect(self._db_path)
             self._cursor = self._connection.cursor()
@@ -356,5 +361,75 @@ class DataManager:
         self._cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
         self._connection.commit()
 
+
+    @classmethod
+    def from_database(cls: type[T], name: str, table_name: str = None) -> T:
+        """
+        Pull object from the database by name.
+        
+        Subclasses must define a '_table_name' class variable (str or list of str)
+        unless table_name is explicitly provided.
+
+        Parameters
+        ----------
+        name : str
+            Name of the object to retrieve.
+        table_name : str, optional
+            Specific table to search. If provided, '_table_name' is not required.
+            If None, uses class's _table_name.
+
+        Returns
+        -------
+        T
+            Instance of the class.
+            
+        Raises
+        ------
+        NotImplementedError
+            If the subclass doesn't define '_table_name' and table_name is not provided.
+        ValueError
+            If the object name is not found in any of the tables.
+        """
+        database = cls()
+        
+        # Get list of tables to search
+        if table_name:
+            tables_to_search = [table_name]
+        else:
+            # Only check for _table_name if table_name wasn't provided
+            if not hasattr(cls, '_table_name'):
+                raise NotImplementedError(
+                    f"{cls.__name__} must define a '_table_name' class variable "
+                    "or provide 'table_name' argument"
+                )
+            
+            if isinstance(cls._table_name, (list, tuple)):
+                tables_to_search = cls._table_name
+            else:
+                tables_to_search = [cls._table_name]
+        
+        # Try each table until found
+        for table in tables_to_search:
+            available_materials = database.get_unique_values(table, "name")
+            
+            if name in available_materials:
+                data = database.get_data(table, condition=f"name = '{name}'")
+                serialized_bytes = data["object"].iloc[0]
+                return cls.deserialize(serialized_bytes)
+        
+        # Not found in any table
+        all_available = []
+        for table in tables_to_search:
+            all_available.extend(database.get_unique_values(table, "name"))
+        
+        raise ValueError(
+            f"'{name}' not found in tables {tables_to_search}. "
+            f"Available: {all_available}"
+        )
+        
+
+
     def __del__(self):
         self._connection.close()
+
+
