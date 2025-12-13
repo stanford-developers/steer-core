@@ -7,6 +7,7 @@ from steer_core.Constants.Units import *
 
 
 class DataManager:
+    
     def __init__(self):
         with importlib.resources.path("steer_core.Data", "database.db") as db_path:
             self._db_path = db_path
@@ -249,6 +250,46 @@ class DataManager:
         """
         data = (
             self.get_data(table_name="separator_materials")
+            .groupby("name", group_keys=False)
+            .apply(
+                lambda x: x.sort_values("date", ascending=False).head(1)
+                if most_recent
+                else x
+            )
+            .reset_index(drop=True)
+        )
+
+        return data
+    
+    def get_tape_materials(self, most_recent: bool = True) -> pd.DataFrame:
+        """
+        Retrieves tape materials from the database.
+
+        :param most_recent: If True, returns only the most recent entry.
+        :return: DataFrame with tape materials.
+        """
+        data = (
+            self.get_data(table_name="tape_materials")
+            .groupby("name", group_keys=False)
+            .apply(
+                lambda x: x.sort_values("date", ascending=False).head(1)
+                if most_recent
+                else x
+            )
+            .reset_index(drop=True)
+        )
+
+        return data
+
+    def get_prismatic_container_materials(self, most_recent: bool = True) -> pd.DataFrame:
+        """
+        Retrieves prismatic container materials from the database.
+
+        :param most_recent: If True, returns only the most recent entry.
+        :return: DataFrame with prismatic container materials.
+        """
+        data = (
+            self.get_data(table_name="prismatic_container_materials")
             .groupby("name", group_keys=False)
             .apply(
                 lambda x: x.sort_values("date", ascending=False).head(1)

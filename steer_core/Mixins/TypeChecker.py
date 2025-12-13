@@ -208,8 +208,9 @@ class ValidationMixin:
         ValueError
             If the value is not a positive float.
         """
+        value = float(value)  # Ensure value is float
         if not isinstance(value, (int, float)):
-            raise ValueError(f"{name} must be a positive float. Provided: {value}.")
+            raise ValueError(f"{name} must be a positive float. Provided: {value} of type {type(value).__name__}.")
 
     @staticmethod
     def validate_positive_int(value: int, name: str) -> None:

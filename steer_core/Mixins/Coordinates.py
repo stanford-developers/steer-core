@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from typing import Tuple
 
-from shapely import Polygon
+from shapely import Polygon, minimum_bounding_circle, Point
 
 
 class CoordinateMixin:
@@ -10,6 +10,31 @@ class CoordinateMixin:
     A class to manage and manipulate 3D coordinates.
     Provides methods for rotation, area calculation, and coordinate ordering.
     """
+    @staticmethod
+    def get_radius_of_points(coords: np.ndarray) -> float:
+        """Calculate the radius of a spiral given its coordinates.
+
+        Parameters
+        ----------
+        coords : np.ndarray
+            Array of shape (N, 2) with columns [x, z]
+
+        Returns
+        -------
+        float
+            Radius of the spiral in meters
+
+        Raises
+        ------
+        ValueError
+            If input coordinates are invalid
+        """
+        polygon = Polygon(coords)
+        circle = minimum_bounding_circle(polygon)
+        center = circle.centroid
+        first_point = list(circle.exterior.coords)[0]
+        radius = Point(center).distance(Point(first_point))
+        return radius, (center.x, center.y)
 
     @staticmethod
     def _calculate_segment_center_line(x_coords: np.ndarray, z_coords: np.ndarray) -> np.ndarray:
@@ -52,7 +77,11 @@ class CoordinateMixin:
         np.ndarray
             For single polygon: Array with shape (2, 2) containing start and end points.
             For multiple segments: Array with center lines for each segment separated by [NaN, NaN].
+            For empty coordinates: Empty array with shape (0, 2).
         """
+        if coordinates.size == 0:
+            return np.array([]).reshape(0, 2)
+            
         x_coords = coordinates[:, 0]
         z_coords = coordinates[:, 2]
         
@@ -101,28 +130,45 @@ class CoordinateMixin:
 
     @staticmethod
     def rotate_coordinates(
-        coords: np.ndarray, axis: str, angle: float, center: tuple = None
+        coords: np.ndarray, 
+        axis: str, 
+        angle: float, 
+        center: tuple = None
     ) -> np.ndarray:
         """
-        Rotate a (N, 3) NumPy array of 3D coordinates around the specified axis.
+        Rotate a NumPy array of coordinates around the specified axis.
+        Can handle 2D coordinates (N, 2) for x, y or 3D coordinates (N, 3) for x, y, z.
         Can handle coordinates with None values (preserves None positions).
 
-        :param coords: NumPy array of shape (N, 3), where columns are x, y, z
-        :param axis: Axis to rotate around ('x', 'y', or 'z')
+        :param coords: NumPy array of shape (N, 2) for 2D or (N, 3) for 3D coordinates
+        :param axis: Axis to rotate around ('x', 'y', or 'z'). For 2D arrays, only 'z' is valid.
         :param angle: Angle in degrees
-        :param center: Point to rotate around as (x, y, z) tuple. If None, rotates around origin.
-        :return: Rotated NumPy array of shape (N, 3)
+        :param center: Point to rotate around. For 2D: (x, y) tuple. For 3D: (x, y, z) tuple. 
+                      If None, rotates around origin.
+        :return: Rotated NumPy array with same shape as input
         """
-        if coords.shape[1] != 3:
+        # Check if 2D or 3D coordinates
+        is_2d = coords.shape[1] == 2
+        is_3d = coords.shape[1] == 3
+        
+        if not (is_2d or is_3d):
             raise ValueError(
-                "Input array must have shape (N, 3) for x, y, z coordinates"
+                "Input array must have shape (N, 2) for 2D or (N, 3) for 3D coordinates"
+            )
+        
+        # For 2D arrays, only z-axis rotation is valid
+        if is_2d and axis != 'z':
+            raise ValueError(
+                "For 2D coordinates (x, y), only 'z' axis rotation is supported"
             )
 
         # Validate center parameter
         if center is not None:
-            if not isinstance(center, (tuple, list)) or len(center) != 3:
+            expected_len = 2 if is_2d else 3
+            if not isinstance(center, (tuple, list)) or len(center) != expected_len:
+                coord_type = "(x, y)" if is_2d else "(x, y, z)"
                 raise ValueError(
-                    "Center must be a tuple or list of 3 coordinates (x, y, z)"
+                    f"Center must be a tuple or list of {expected_len} coordinates {coord_type}"
                 )
             if not all(isinstance(coord, (int, float)) for coord in center):
                 raise TypeError("All center coordinates must be numbers")
@@ -172,10 +218,11 @@ class CoordinateMixin:
         """
         Rotate coordinates around a specified center point.
 
-        :param coords: NumPy array of shape (N, 3) with valid coordinates
+        :param coords: NumPy array of shape (N, 2) or (N, 3) with valid coordinates
         :param axis: Axis to rotate around ('x', 'y', or 'z')
         :param angle: Angle in degrees
-        :param center: Center point as np.array of shape (3,). If None, rotates around origin.
+        :param center: Center point as np.array. Shape (2,) for 2D or (3,) for 3D. 
+                      If None, rotates around origin.
         :return: Rotated coordinates
         """
         if center is None:
@@ -211,22 +258,91 @@ class CoordinateMixin:
             The width of the square.
         y_width : float
             The height of the square.
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Tuple containing x and y coordinate arrays defining the square/rectangle
         """
-        x_coords = [x, x, x + x_width, x + x_width, x]
-        y_coords = [y, y + y_width, y + y_width, y, y]
+        x_coords = np.array([x, x, x + x_width, x + x_width, x])
+        y_coords = np.array([y, y + y_width, y + y_width, y, y])
+        return x_coords, y_coords
+
+    @staticmethod
+    def build_circle_array(
+        center_x: float, center_y: float, radius: float, num_points: int = 64, anticlockwise: bool = True
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Build a NumPy array representing a circle defined by its center and radius.
+
+        Parameters
+        ----------
+        center_x : float
+            The x-coordinate of the circle center.
+        center_y : float
+            The y-coordinate of the circle center.
+        radius : float
+            The radius of the circle.
+        num_points : int, optional
+            Number of points to use for the circle approximation, by default 64
+        anticlockwise : bool, optional
+            If True, points are ordered anticlockwise; if False, clockwise, by default True
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Tuple containing x and y coordinate arrays defining the circle
+        """
+        # Generate angles from 0 to 2π
+        angles = np.linspace(0, 2 * np.pi, num_points + 1)
+        
+        # Reverse angles for clockwise direction
+        if not anticlockwise:
+            angles = angles[::-1]
+        
+        # Calculate x and y coordinates
+        x_coords = center_x + radius * np.cos(angles)
+        y_coords = center_y + radius * np.sin(angles)
+        
         return x_coords, y_coords
 
     @staticmethod
     def order_coordinates_clockwise(df: pd.DataFrame, plane="xy") -> pd.DataFrame:
+
+        df = df.copy()
+
         axis_1 = plane[0]
         axis_2 = plane[1]
 
-        cx = df[axis_1].mean()
-        cy = df[axis_2].mean()
+        # Find column names that match the axis (case-insensitive, with or without units)
+        def find_column(axis_char: str) -> str:
+            axis_char_lower = axis_char.lower()
+            # First try exact match
+            if axis_char in df.columns:
+                return axis_char
+            # Try lowercase
+            if axis_char_lower in df.columns:
+                return axis_char_lower
+            # Try uppercase
+            if axis_char.upper() in df.columns:
+                return axis_char.upper()
+            # Try with units pattern like "X (mm)", "x (mm)", etc.
+            for col in df.columns:
+                col_stripped = col.split()[0].lower() if ' ' in col else col.lower()
+                if col_stripped == axis_char_lower:
+                    return col
+            raise KeyError(f"Could not find column for axis '{axis_char}' in dataframe columns: {list(df.columns)}")
+        
+        axis_1_col = find_column(axis_1)
+        axis_2_col = find_column(axis_2)
 
-        angles = np.arctan2(df[axis_2] - cy, df[axis_1] - cx)
+        cx = df[axis_1_col].mean()
+        cy = df[axis_2_col].mean()
+
+        angles = np.arctan2(df[axis_2_col] - cy, df[axis_1_col] - cx)
 
         df["angle"] = angles
+
         df_sorted = (
             df.sort_values(by="angle").drop(columns="angle").reset_index(drop=True)
         )
@@ -234,24 +350,257 @@ class CoordinateMixin:
         return df_sorted
 
     @staticmethod
+    def order_coordinates_clockwise_numpy(
+        coords: np.ndarray, 
+        plane: str = "xy"
+    ) -> np.ndarray:
+        """
+        Order 3D coordinates in clockwise direction based on a specified plane.
+        Handles multiple coordinate blocks separated by NaN rows.
+        
+        Parameters
+        ----------
+        coords : np.ndarray
+            Array of 3D coordinates with shape (N, 3) where columns are [x, y, z].
+            NaN rows indicate separations between coordinate blocks.
+        plane : str, optional
+            Plane to use for ordering ('xy', 'xz', 'yz'), by default 'xy'
+            
+        Returns
+        -------
+        np.ndarray
+            Sorted coordinates array with same shape as input, with each block
+            sorted clockwise and separated by NaN rows
+            
+        Raises
+        ------
+        ValueError
+            If coords array doesn't have shape (N, 3) or plane is invalid
+        """
+        if len(coords.shape) != 2 or coords.shape[1] != 3:
+            raise ValueError("coords must be a 2D array with 3 columns (x, y, z)")
+        
+        if coords.shape[0] < 2:
+            return coords.copy()
+        
+        # Map plane string to column indices
+        plane_mapping = {
+            'xy': (0, 1),  # x, y columns
+            'xz': (0, 2),  # x, z columns  
+            'yz': (1, 2)   # y, z columns
+        }
+        
+        if plane not in plane_mapping:
+            raise ValueError(f"plane must be one of {list(plane_mapping.keys())}, got '{plane}'")
+        
+        # Check if we have NaN rows (multiple coordinate blocks)
+        x_coords = coords[:, 0]
+        x_is_nan = np.isnan(x_coords)
+        
+        if not np.any(x_is_nan):
+            # Single block - use original logic
+            return CoordinateMixin._sort_single_coordinate_block(coords, plane)
+        
+        # Multiple blocks - extract and sort each block
+        segments = CoordinateMixin._extract_coordinate_blocks(coords)
+        sorted_blocks = []
+        
+        for block in segments:
+            if len(block) > 1:  # Only sort if block has more than 1 coordinate
+                sorted_block = CoordinateMixin._sort_single_coordinate_block(block, plane)
+                sorted_blocks.append(sorted_block)
+            elif len(block) == 1:  # Single coordinate, keep as is
+                sorted_blocks.append(block)
+        
+        return CoordinateMixin._concatenate_coordinate_blocks_with_nans(sorted_blocks)
+
+    @staticmethod
+    def concat_with_nan_separators(arrays: list) -> np.ndarray:
+        """
+        Efficiently concatenate numpy arrays with NaN separators.
+        
+        Parameters
+        ----------
+        arrays : list
+            List of numpy arrays to concatenate
+            
+        Returns
+        -------
+        np.ndarray
+            Concatenated array with NaN separators
+        """
+        if not arrays:
+            return np.array([])
+            
+        if len(arrays) == 1:
+            return arrays[0]
+        
+        # Calculate total size needed
+        total_rows = sum(arr.shape[0] for arr in arrays) + len(arrays) - 1
+        n_cols = arrays[0].shape[1]
+        
+        # Pre-allocate result array
+        result = np.empty((total_rows, n_cols))
+        
+        current_row = 0
+        for i, arr in enumerate(arrays):
+            # Copy array data
+            result[current_row:current_row + arr.shape[0]] = arr
+            current_row += arr.shape[0]
+            
+            # Add NaN separator (except after last array)
+            if i < len(arrays) - 1:
+                result[current_row] = np.nan
+                current_row += 1
+        
+        return result
+
+    @staticmethod
+    def _sort_single_coordinate_block(
+        coords: np.ndarray, 
+        plane: str
+    ) -> np.ndarray:
+        """
+        Sort a single coordinate block clockwise.
+        
+        Parameters
+        ----------
+        coords : np.ndarray
+            Array of 3D coordinates with shape (N, 3)
+        plane : str
+            Plane to use for ordering ('xy', 'xz', 'yz')
+            
+        Returns
+        -------
+        np.ndarray
+            Sorted coordinates array
+        """
+        plane_mapping = {
+            'xy': (0, 1),  # x, y columns
+            'xz': (0, 2),  # x, z columns  
+            'yz': (1, 2)   # y, z columns
+        }
+        
+        axis_1_idx, axis_2_idx = plane_mapping[plane]
+        
+        # Extract the relevant coordinates for the specified plane
+        axis_1_coords = coords[:, axis_1_idx]
+        axis_2_coords = coords[:, axis_2_idx]
+        
+        # Calculate center point
+        cx = np.nanmean(axis_1_coords)
+        cy = np.nanmean(axis_2_coords)
+        
+        # Calculate angles from center to each point
+        angles = np.arctan2(axis_2_coords - cy, axis_1_coords - cx)
+        
+        # Sort by angle to get clockwise ordering
+        sorted_indices = np.argsort(angles)
+        
+        return coords[sorted_indices]
+
+    @staticmethod
+    def _extract_coordinate_blocks(coords: np.ndarray) -> list:
+        """
+        Extract coordinate blocks separated by NaN rows.
+        
+        Parameters
+        ----------
+        coords : np.ndarray
+            Array of 3D coordinates with NaN row separators
+            
+        Returns
+        -------
+        list
+            List of coordinate block arrays
+        """
+        blocks = []
+        x_coords = coords[:, 0]
+        x_is_nan = np.isnan(x_coords)
+        nan_indices = np.where(x_is_nan)[0]
+        start_idx = 0
+        
+        # Process each block between NaN rows
+        for nan_idx in nan_indices:
+            if nan_idx > start_idx:
+                block = coords[start_idx:nan_idx]
+                if len(block) > 0:
+                    blocks.append(block)
+            start_idx = nan_idx + 1
+        
+        # Handle the last block if it exists
+        if start_idx < len(coords):
+            block = coords[start_idx:]
+            if len(block) > 0:
+                blocks.append(block)
+            
+        return blocks
+
+    @staticmethod
+    def _concatenate_coordinate_blocks_with_nans(blocks: list) -> np.ndarray:
+        """
+        Concatenate coordinate blocks with NaN row separators.
+        
+        Parameters
+        ----------
+        blocks : list
+            List of coordinate block arrays
+            
+        Returns
+        -------
+        np.ndarray
+            Concatenated array with NaN separators
+        """
+        if not blocks:
+            return np.array([]).reshape(0, 3)
+        
+        result_parts = []
+        
+        for i, block in enumerate(blocks):
+            result_parts.append(block)
+            
+            # Add NaN separator between blocks (except for the last one)
+            if i < len(blocks) - 1:
+                nan_row = np.full((1, 3), np.nan)
+                result_parts.append(nan_row)
+        
+        return np.vstack(result_parts)
+
+    @staticmethod
     def _rotate_valid_coordinates(
         coords: np.ndarray, axis: str, angle: float
     ) -> np.ndarray:
         """
         Rotate coordinates without None values using rotation matrices.
+        Handles both 2D (N, 2) and 3D (N, 3) coordinate arrays.
+        
+        :param coords: NumPy array of shape (N, 2) or (N, 3)
+        :param axis: Axis to rotate around ('x', 'y', or 'z')
+        :param angle: Angle in degrees
+        :return: Rotated coordinates with same shape as input
         """
         angle_rad = np.radians(angle)
         cos_a = np.cos(angle_rad)
         sin_a = np.sin(angle_rad)
+        
+        is_2d = coords.shape[1] == 2
 
-        if axis == "x":
-            R = np.array([[1, 0, 0], [0, cos_a, -sin_a], [0, sin_a, cos_a]])
-        elif axis == "y":
-            R = np.array([[cos_a, 0, sin_a], [0, 1, 0], [-sin_a, 0, cos_a]])
-        elif axis == "z":
-            R = np.array([[cos_a, -sin_a, 0], [sin_a, cos_a, 0], [0, 0, 1]])
+        if is_2d:
+            # For 2D coordinates, only z-axis rotation applies (rotation in xy plane)
+            if axis != 'z':
+                raise ValueError("For 2D coordinates, only 'z' axis rotation is supported")
+            # 2D rotation matrix
+            R = np.array([[cos_a, -sin_a], [sin_a, cos_a]])
         else:
-            raise ValueError("Axis must be 'x', 'y', or 'z'.")
+            # 3D rotation matrices
+            if axis == "x":
+                R = np.array([[1, 0, 0], [0, cos_a, -sin_a], [0, sin_a, cos_a]])
+            elif axis == "y":
+                R = np.array([[cos_a, 0, sin_a], [0, 1, 0], [-sin_a, 0, cos_a]])
+            elif axis == "z":
+                R = np.array([[cos_a, -sin_a, 0], [sin_a, cos_a, 0], [0, 0, 1]])
+            else:
+                raise ValueError("Axis must be 'x', 'y', or 'z'.")
 
         return coords @ R.T
 
@@ -261,9 +610,7 @@ class CoordinateMixin:
         Calculate the area of a single closed shape using the shoelace formula.
         """
         if len(x) < 3 or len(y) < 3:
-            raise ValueError(
-                "Trace must contain at least 3 points to form a closed shape."
-            )
+            return 0.0
 
         # Convert to float arrays to avoid object dtype issues
         x = np.asarray(x, dtype=float)
