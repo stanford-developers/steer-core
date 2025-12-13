@@ -1,7 +1,4 @@
-__version__ = "0.1.31"
-
-# datamanager import
-from .DataManager import DataManager
+__version__ = "0.1.32"
 
 from .Mixins.Colors import ColorMixin
 from .Mixins.Coordinates import CoordinateMixin
