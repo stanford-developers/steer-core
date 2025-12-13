@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Iterable
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -33,26 +33,42 @@ class ValidationMixin:
         )
         
     @staticmethod
-    def validate_type(value: Type, expected_type: Type, name: str) -> None:
-        """
-        Validate that a value is of the expected type.
+    def validate_type(value, expected_type, name: str) -> None:
+        """Validate that a value is of the expected type or one of multiple allowed types.
 
         Parameters
         ----------
-        value : Type
+        value : Any
             The value to validate.
-        expected_type : Type
-            The expected type of the value.
+        expected_type : Type | Iterable[Type]
+            A single expected type or an iterable (list/tuple/set) of acceptable types.
         name : str
             The name of the parameter for error messages.
 
         Raises
         ------
         TypeError
-            If the value is not of the expected type.
+            If the value is not an instance of any of the expected types.
+
+        Examples
+        --------
+        >>> ValidationMixin.validate_type(5, int, 'count')            # OK
+        >>> ValidationMixin.validate_type(5, (int, float), 'count')   # OK
+        >>> ValidationMixin.validate_type('x', (int, float), 'count') # TypeError
+        >>> ValidationMixin.validate_type([1,2,3], list, 'items')     # OK
+        >>> ValidationMixin.validate_type([1,2,3], [list, tuple], 'items') # OK
         """
-        if not isinstance(value, expected_type):
-            raise TypeError(f"{name} must be of type {expected_type.__name__}. Provided: {type(value).__name__}.")
+        # Normalize expected types to a tuple for isinstance
+        if isinstance(expected_type, (list, set)):
+            expected_types = tuple(expected_type)
+        elif isinstance(expected_type, tuple):
+            expected_types = expected_type
+        else:
+            expected_types = (expected_type,)
+
+        if not isinstance(value, expected_types):
+            type_names = ', '.join(t.__name__ for t in expected_types)
+            raise TypeError(f"{name} must be of type {type_names}. Provided: {type(value).__name__}.")
 
     @staticmethod
     def validate_percentage(value: float, name: str) -> None:
@@ -192,8 +208,42 @@ class ValidationMixin:
         ValueError
             If the value is not a positive float.
         """
+        value = float(value)  # Ensure value is float
         if not isinstance(value, (int, float)):
-            raise ValueError(f"{name} must be a positive float. Provided: {value}.")
+            raise ValueError(f"{name} must be a positive float. Provided: {value} of type {type(value).__name__}.")
+
+    @staticmethod
+    def validate_positive_int(value: int, name: str) -> None:
+        """Validate that a value is a strictly positive integer.
+
+        Parameters
+        ----------
+        value : int
+            The value to validate.
+        name : str
+            The name of the parameter for error messages.
+
+        Raises
+        ------
+        TypeError
+            If the value is not an integer (bool is rejected even though it is a subclass of int).
+        ValueError
+            If the integer is not strictly positive (> 0).
+
+        Examples
+        --------
+        >>> ValidationMixin.validate_positive_int(5, 'count')        # OK
+        >>> ValidationMixin.validate_positive_int(0, 'count')        # ValueError
+        >>> ValidationMixin.validate_positive_int(-3, 'count')       # ValueError
+        >>> ValidationMixin.validate_positive_int(True, 'flag')      # TypeError (bool rejected)
+        >>> ValidationMixin.validate_positive_int(12_000, 'cycles')  # OK
+        """
+        # Reject bool explicitly (bool is subclass of int)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise TypeError(f"{name} must be a positive integer. Provided: {value} (type: {type(value).__name__}).")
+
+        if value <= 0:
+            raise ValueError(f"{name} must be a positive integer (> 0). Provided: {value}.")
 
     @staticmethod
     def validate_string(value: str, name: str) -> None:
