@@ -361,7 +361,6 @@ class DataManager:
         self._cursor.execute(f"DELETE FROM {table_name} WHERE {condition}")
         self._connection.commit()
 
-
     @classmethod
     def from_database(cls: type[T], name: str, table_name: str = None) -> T:
         """
@@ -427,8 +426,6 @@ class DataManager:
             f"Available: {all_available}"
         )
         
-
-
     def __del__(self):
         self._connection.close()
 
