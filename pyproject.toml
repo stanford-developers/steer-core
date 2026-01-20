@@ -33,6 +33,7 @@ dependencies = [
     "datetime==5.5",
     "plotly==6.2.0",
     "scipy==1.15.3",
+    "msgpack==1.1.2",
 ]
 
 [project.urls]
