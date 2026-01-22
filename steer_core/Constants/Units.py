@@ -19,6 +19,19 @@ mG_TO_G = 1e-3
 G_TO_mG = 1e3
 CM_TO_UM = 1e4
 UM_TO_CM = 1e-4
+KG_TO_T = 1e-3
+T_TO_KG = 1e3
+T_TO_MT = 1e-6
+MT_TO_T = 1e6
+LB_TO_KG = 0.453592
+KG_TO_LB = 1 / 0.453592
+T_TO_SHORT_TON = 1.10231
+SHORT_TON_TO_T = 1 / 1.10231
+LB_TO_SHORT_TON = 1 / 2000
+SHORT_TON_TO_LB = 2000
+LB_TO_T = 1 / 2000 * 1/1.10231
+
+
 
 # Current units
 A_TO_mA = 1e3
@@ -31,6 +44,9 @@ S_TO_MIN = 1 / 60
 MIN_TO_S = 60
 S_TO_Y = 1 / (3600 * 24 * 365)
 Y_TO_S = 3600 * 24 * 365
+H_TO_Y = 1 / 8760
+Y_TO_H = 8760
+
 
 # Energy units
 W_TO_KW = 1e-3
@@ -42,7 +58,14 @@ DEG_TO_RAD = 0.017453292519943295
 # Percentage units
 PERCENT_TO_FRACTION = 1e-2
 FRACTION_TO_PERCENT = 1e2
+FRACTION_TO_PPM = 1e6
+PPM_TO_FRACTION = 1e-6
 
 # Volume units
 L_TO_M3 = 1e-3
 M3_TO_L = 1e3
+GAL_TO_L = 3.78541
+L_TO_GAL = 1 / 3.78541
+MMGAL_TO_GAL = 1e-6
+GAL_TO_MMGAL = 1e6
+
