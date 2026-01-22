@@ -25,7 +25,12 @@ class SerializerMixin:
             The serialized byte representation of the object.
         """
         m.patch()  # Enable numpy support
-        data = msgpack.packb(self._to_dict(), use_bin_type=True)
+        # Include class information for proper deserialization
+        obj_dict = {
+            '_class': f"{self.__class__.__module__}.{self.__class__.__name__}",
+            **self._to_dict()
+        }
+        data = msgpack.packb(obj_dict, use_bin_type=True)
         
         if compress:
             # Add marker byte to indicate compression
@@ -133,7 +138,19 @@ class SerializerMixin:
             data = data[1:]
         
         obj_dict = msgpack.unpackb(data, raw=False)
-        return cls._from_dict(obj_dict)
+        
+        # Use stored class information if available
+        if '_class' in obj_dict:
+            import importlib
+            module_name, class_name = obj_dict['_class'].rsplit('.', 1)
+            module = importlib.import_module(module_name)
+            actual_cls = getattr(module, class_name)
+            # Remove class marker before reconstructing
+            obj_data = {k: v for k, v in obj_dict.items() if k != '_class'}
+            return actual_cls._from_dict(obj_data)
+        else:
+            # Fallback for backward compatibility
+            return cls._from_dict(obj_dict)
     
     @classmethod
     def _deserialize_value(cls, value: Any) -> Any:

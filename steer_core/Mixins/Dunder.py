@@ -154,7 +154,10 @@ class DunderMixin:
         """
         String representation of the instance showing all @property decorated attributes and their values.
         """
-        return f"{self.__class__.__name__}, {self.__name__}"
+        if hasattr(self, 'name') and self.name:
+            return f"{self.__class__.__name__} ({self.name})"
+        else:
+            return f"{self.__class__.__name__}"
     
     def __repr__(self):
         """
