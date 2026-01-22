@@ -1,4 +1,4 @@
-__version__ = "0.1.32"
+__version__ = "0.1.33"
 
 # Use lazy imports for Mixins to avoid triggering optional dependencies
 # (like shapely for Coordinates) when only importing Constants.
