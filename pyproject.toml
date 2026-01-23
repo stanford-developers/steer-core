@@ -28,8 +28,8 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-    "pandas==2.1.4",
-    "numpy==1.26.4",
+    "pandas==2.3.3",
+    "numpy==2.2.6",
     "datetime==5.5",
     "plotly==6.2.0",
     "scipy==1.15.3",
