@@ -257,7 +257,7 @@ class SerializerMixin:
         ValueError
             If the object name is not found in any of the tables.
         """
-        from steer_core.Data.DataManager import DataManager
+        from steer_opencell_data.DataManager import DataManager
         
         database = DataManager()
         
