@@ -252,7 +252,7 @@ class MEA:
 # THERMODYNAMIC FUNCTIONS
 # =============================================================================
 
-def antoine_pressure_mmhg(T_celsius: float) -> float:
+def antoine_pressure(T_celsius: float) -> float:
     """
     Calculate CO2 sublimation pressure using Antoine equation.
     
@@ -265,7 +265,7 @@ def antoine_pressure_mmhg(T_celsius: float) -> float:
     return 10 ** (CO2.ANTOINE_A - CO2.ANTOINE_B / (T_celsius + CO2.ANTOINE_C))
 
 
-def antoine_temperature_celsius(P_mmhg: float) -> float:
+def antoine_temperature(P_mmhg: float) -> float:
     """
     Calculate CO2 sublimation temperature from pressure.
     
@@ -279,7 +279,7 @@ def antoine_temperature_celsius(P_mmhg: float) -> float:
     return CO2.ANTOINE_B / (CO2.ANTOINE_A - log_P) - CO2.ANTOINE_C
 
 
-def water_vapor_pressure_pa(T_K: float) -> float:
+def water_vapor_pressure(T_K: float) -> float:
     """
     Calculate water vapor pressure using Antoine equation.
     
@@ -296,7 +296,7 @@ def water_vapor_pressure_pa(T_K: float) -> float:
     return P_bar * 1e5  # Convert bar to Pa
 
 
-def mea_equilibrium_pressure_pa(loading: float, T_K: float) -> float:
+def mea_equilibrium_pressure(loading: float, T_K: float) -> float:
     """
     Calculate equilibrium partial pressure of CO2 over MEA solution.
     
@@ -369,8 +369,8 @@ def mea_bubble_point_temperature(loading: float, P_total_Pa: float) -> float:
     
     # Iterate to find bubble point
     for _ in range(20):  # Max 20 iterations
-        P_co2_star = mea_equilibrium_pressure_pa(loading, T_guess_K)
-        P_h2o_star = water_vapor_pressure_pa(T_guess_K)
+        P_co2_star = mea_equilibrium_pressure(loading, T_guess_K)
+        P_h2o_star = water_vapor_pressure(T_guess_K)
         P_total_calc = P_co2_star + P_h2o_star
         
         # Check convergence
