@@ -18,8 +18,6 @@ PI = 3.14159265358979323846
 # =============================================================================
 
 R_GAS = 8.314  # J/(mol·K) Universal gas constant
-R_GAS_J_MOL_K = 8.314  # J/(mol·K) - Universal gas constant (alias)
-R_GAS_KJ_KMOL_K = 8.314  # kJ/(kmol·K) - For use with kmol units
 
 GRAVITY = 9.81  # m/s² - Standard acceleration due to gravity
 
