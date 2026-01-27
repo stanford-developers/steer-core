@@ -1,0 +1,952 @@
+{
+  "technology": "amine",
+  "flow_rate": 100.0,
+  "capture_rate": 0.85,
+  "concentration": 0.12,
+  "timestamp": "2026-01-25T17:46:35.808660",
+  "baseline": {
+    "cost_per_tonne": 98.94613946313589,
+    "capex_per_tonne": 45.01440287593447,
+    "opex_per_tonne": 53.93173658720142
+  },
+  "optimal": {
+    "cost_per_tonne": 78.22189253743598,
+    "capex_per_tonne": 27.508801757515513,
+    "opex_per_tonne": 33.207489661501505
+  },
+  "total_reduction": {
+    "cost_per_tonne": 20.724246925699916,
+    "capex_per_tonne": 17.50560111841896,
+    "opex_per_tonne": 20.724246925699916
+  },
+  "summary": {
+    "total_parameters": 33,
+    "tunable_parameters": 22,
+    "beneficial_parameters": 19,
+    "filtered_parameters": 3
+  },
+  "improvements": [
+    {
+      "parameter_name": "heat_of_absorption",
+      "display_name": "Heat of Absorption",
+      "unit": "kJ/mol",
+      "current_value": 85.0,
+      "target_optimal": 50.0,
+      "max_cost_reduction": -9.344679683489915,
+      "max_capex_reduction": -4.390835178413155,
+      "max_opex_reduction": -4.953844505076752,
+      "is_beneficial": true,
+      "priority_score": 0.5626933316811681,
+      "cost_impact": "opex",
+      "constraint_type": "material"
+    },
+    {
+      "parameter_name": "mea_concentration",
+      "display_name": "MEA Concentration",
+      "unit": "wt fraction",
+      "current_value": 0.3,
+      "target_optimal": 0.4,
+      "max_cost_reduction": 1.3109960026025647,
+      "max_capex_reduction": -0.6642512506284888,
+      "max_opex_reduction": 1.9752472532310463,
+      "is_beneficial": false,
+      "priority_score": 0.2666666666666667,
+      "cost_impact": "both",
+      "constraint_type": "material"
+    },
+    {
+      "parameter_name": "lrhe_effectiveness",
+      "display_name": "LRHE Effectiveness",
+      "unit": "fraction",
+      "current_value": 0.85,
+      "target_optimal": 0.92,
+      "max_cost_reduction": -1.3815972339235145,
+      "max_capex_reduction": 1.2907612899991818,
+      "max_opex_reduction": -2.6723585239227035,
+      "is_beneficial": true,
+      "priority_score": 0.2579185052529996,
+      "cost_impact": "both",
+      "constraint_type": "equipment"
+    },
+    {
+      "parameter_name": "pump_efficiency",
+      "display_name": "Pump Efficiency",
+      "unit": "fraction",
+      "current_value": 0.75,
+      "target_optimal": 0.85,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.08666666666666666,
+      "cost_impact": "opex",
+      "constraint_type": "equipment"
+    },
+    {
+      "parameter_name": "blower_efficiency",
+      "display_name": "Blower Efficiency",
+      "unit": "fraction",
+      "current_value": 0.75,
+      "target_optimal": 0.85,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.08666666666666666,
+      "cost_impact": "opex",
+      "constraint_type": "equipment"
+    },
+    {
+      "parameter_name": "boiler_efficiency",
+      "display_name": "Boiler Efficiency",
+      "unit": "fraction",
+      "current_value": 0.85,
+      "target_optimal": 0.92,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.07647058823529414,
+      "cost_impact": "opex",
+      "constraint_type": "equipment"
+    },
+    {
+      "parameter_name": "rich_pump_head",
+      "display_name": "Rich Pump Head",
+      "unit": "m",
+      "current_value": 50.0,
+      "target_optimal": 40.0,
+      "max_cost_reduction": -0.09430701739456993,
+      "max_capex_reduction": -0.03976636325209171,
+      "max_opex_reduction": -0.05454065414247111,
+      "is_beneficial": true,
+      "priority_score": 0.24282921052183712,
+      "cost_impact": "opex",
+      "constraint_type": "design"
+    },
+    {
+      "parameter_name": "lean_pump_head",
+      "display_name": "Lean Pump Head",
+      "unit": "m",
+      "current_value": 60.0,
+      "target_optimal": 50.0,
+      "max_cost_reduction": 0.017398281550811134,
+      "max_capex_reduction": 0.05244672425808261,
+      "max_opex_reduction": -0.03504844270727148,
+      "is_beneficial": false,
+      "priority_score": 0.23333333333333334,
+      "cost_impact": "opex",
+      "constraint_type": "design"
+    },
+    {
+      "parameter_name": "absorber_temperature",
+      "display_name": "Absorber Temperature",
+      "unit": "\u00b0C",
+      "current_value": 45.0,
+      "target_optimal": 40.0,
+      "max_cost_reduction": -3.6534148809295885,
+      "max_capex_reduction": -0.9570411643340577,
+      "max_opex_reduction": -2.6963737165955237,
+      "is_beneficial": true,
+      "priority_score": 0.33182466865010984,
+      "cost_impact": "both",
+      "constraint_type": "physics"
+    },
+    {
+      "parameter_name": "stripper_pressure",
+      "display_name": "Stripper Pressure",
+      "unit": "bar",
+      "current_value": 1.8,
+      "target_optimal": 2.0,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.08222222222222221,
+      "cost_impact": "both",
+      "constraint_type": "physics"
+    },
+    {
+      "parameter_name": "heat_loss_fraction",
+      "display_name": "Heat Loss Fraction",
+      "unit": "fraction",
+      "current_value": 0.05,
+      "target_optimal": 0.02,
+      "max_cost_reduction": -0.9969948354573717,
+      "max_capex_reduction": -0.08982534033115996,
+      "max_opex_reduction": -0.9071694951261975,
+      "is_beneficial": true,
+      "priority_score": 0.34990984506372114,
+      "cost_impact": "opex",
+      "constraint_type": "design"
+    },
+    {
+      "parameter_name": "electricity_price",
+      "display_name": "Electricity Price",
+      "unit": "USD/MWh",
+      "current_value": 80.0,
+      "target_optimal": 50.0,
+      "max_cost_reduction": -0.18276219973245134,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": -0.18276219973245844,
+      "is_beneficial": true,
+      "priority_score": 0.2804828659919736,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "steam_cost",
+      "display_name": "Steam Cost",
+      "unit": "USD/GJ",
+      "current_value": 8.0,
+      "target_optimal": 5.0,
+      "max_cost_reduction": -20.724246925699916,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": -20.724246925699916,
+      "is_beneficial": true,
+      "priority_score": 0.875,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "solvent_makeup_cost",
+      "display_name": "Solvent Makeup Cost",
+      "unit": "USD/kg MEA",
+      "current_value": 2.0,
+      "target_optimal": 1.5,
+      "max_cost_reduction": -0.7874999999999943,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": -0.7875000000000014,
+      "is_beneficial": true,
+      "priority_score": 0.27362499999999984,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "solvent_degradation_rate",
+      "display_name": "Solvent Degradation Rate",
+      "unit": "kg MEA/t CO2",
+      "current_value": 1.5,
+      "target_optimal": 0.8,
+      "max_cost_reduction": -1.470000000000013,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": -1.470000000000006,
+      "is_beneficial": true,
+      "priority_score": 0.3374333333333337,
+      "cost_impact": "opex",
+      "constraint_type": "material"
+    },
+    {
+      "parameter_name": "labor_cost_factor",
+      "display_name": "Labor Cost Factor",
+      "unit": "fraction of CAPEX/yr",
+      "current_value": 0.01,
+      "target_optimal": 0.008,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.1,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "maintenance_factor",
+      "display_name": "Maintenance Factor",
+      "unit": "fraction of CAPEX/yr",
+      "current_value": 0.03,
+      "target_optimal": 0.025,
+      "max_cost_reduction": -2.378811625817491,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": -2.378811625817484,
+      "is_beneficial": true,
+      "priority_score": 0.3046976821078581,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "taxes_insurance_factor",
+      "display_name": "Taxes & Insurance Factor",
+      "unit": "fraction of CAPEX/yr",
+      "current_value": 0.02,
+      "target_optimal": 0.01,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.16,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "labor_scaling_exponent",
+      "display_name": "Labor Scaling Exponent",
+      "unit": "dimensionless",
+      "current_value": 0.25,
+      "target_optimal": 0.2,
+      "max_cost_reduction": 0.24450915091001946,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.24450915091001235,
+      "is_beneficial": false,
+      "priority_score": 0.24,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "supervision_factor",
+      "display_name": "Supervision Factor",
+      "unit": "fraction of labor",
+      "current_value": 0.2,
+      "target_optimal": 0.15,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.11000000000000001,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "overhead_factor",
+      "display_name": "Overhead Factor",
+      "unit": "fraction of labor",
+      "current_value": 0.3,
+      "target_optimal": 0.25,
+      "max_cost_reduction": -0.34951583042814605,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": -0.34951583042815315,
+      "is_beneficial": true,
+      "priority_score": 0.24381880824617772,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "delta_T_cooling_water",
+      "display_name": "Cooling Water Delta T",
+      "unit": "\u00b0C",
+      "current_value": 8.0,
+      "target_optimal": 10.0,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.11,
+      "cost_impact": "opex",
+      "constraint_type": "design"
+    },
+    {
+      "parameter_name": "equipment_manufacturing_cost_factor",
+      "display_name": "Equipment Manufacturing Cost",
+      "unit": "fraction",
+      "current_value": 1.0,
+      "target_optimal": 0.75,
+      "max_cost_reduction": -2.3182281568115712,
+      "max_capex_reduction": -1.9137048816023992,
+      "max_opex_reduction": -0.4045232752091721,
+      "is_beneficial": true,
+      "priority_score": 0.31954684470434713,
+      "cost_impact": "capex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "interest_rate",
+      "display_name": "Interest Rate / WACC",
+      "unit": "fraction",
+      "current_value": 0.08,
+      "target_optimal": 0.05,
+      "max_cost_reduction": -12.048781843132645,
+      "max_capex_reduction": -12.048781843132637,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": true,
+      "priority_score": 0.6364634552939794,
+      "cost_impact": "capex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "project_lifetime",
+      "display_name": "Project Lifetime",
+      "unit": "years",
+      "current_value": 25.0,
+      "target_optimal": 30.0,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.1,
+      "cost_impact": "capex",
+      "constraint_type": "design"
+    },
+    {
+      "parameter_name": "epc_cost_factor",
+      "display_name": "EPC Cost Factor",
+      "unit": "fraction",
+      "current_value": 0.12,
+      "target_optimal": 0.08,
+      "max_cost_reduction": -1.6076572455690723,
+      "max_capex_reduction": -1.6076572455690723,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": true,
+      "priority_score": 0.3148963840337388,
+      "cost_impact": "capex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "process_contingency_factor",
+      "display_name": "Process Contingency",
+      "unit": "fraction",
+      "current_value": 0.3,
+      "target_optimal": 0.1,
+      "max_cost_reduction": -6.925292750143768,
+      "max_capex_reduction": -6.925292750143761,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": true,
+      "priority_score": 0.5410921158376464,
+      "cost_impact": "capex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "project_contingency_factor",
+      "display_name": "Project Contingency",
+      "unit": "fraction",
+      "current_value": 0.2,
+      "target_optimal": 0.1,
+      "max_cost_reduction": -17.50560111841895,
+      "max_capex_reduction": -17.50560111841896,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": true,
+      "priority_score": 0.8251680335525685,
+      "cost_impact": "capex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "owner_cost_factor",
+      "display_name": "Owner's Costs",
+      "unit": "fraction",
+      "current_value": 0.15,
+      "target_optimal": 0.12,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.1,
+      "cost_impact": "capex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "absorber_pressure",
+      "display_name": "Absorber Pressure",
+      "unit": "bar",
+      "current_value": 1.1,
+      "target_optimal": 1.2,
+      "max_cost_reduction": -3.9440060599758056,
+      "max_capex_reduction": -2.6916261173346427,
+      "max_opex_reduction": -1.2523799426411557,
+      "is_beneficial": true,
+      "priority_score": 0.3365019999810923,
+      "cost_impact": "both",
+      "constraint_type": "equipment"
+    },
+    {
+      "parameter_name": "base_operators",
+      "display_name": "Base Operators",
+      "unit": "FTEs",
+      "current_value": 8.0,
+      "target_optimal": 5.0,
+      "max_cost_reduction": -1.3456359471483665,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": -1.3456359471483523,
+      "is_beneficial": true,
+      "priority_score": 0.315369078414451,
+      "cost_impact": "opex",
+      "constraint_type": "design"
+    },
+    {
+      "parameter_name": "labor_rate",
+      "display_name": "Labor Rate",
+      "unit": "USD/FTE/year",
+      "current_value": 80000.0,
+      "target_optimal": 60000.0,
+      "max_cost_reduction": -0.5767011202064367,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": -0.5767011202064367,
+      "is_beneficial": true,
+      "priority_score": 0.2673010336061931,
+      "cost_impact": "opex",
+      "constraint_type": "economic"
+    },
+    {
+      "parameter_name": "construction_duration",
+      "display_name": "Construction Duration",
+      "unit": "years",
+      "current_value": 3.0,
+      "target_optimal": 2.0,
+      "max_cost_reduction": 0.0,
+      "max_capex_reduction": 0.0,
+      "max_opex_reduction": 0.0,
+      "is_beneficial": false,
+      "priority_score": 0.12666666666666665,
+      "cost_impact": "capex",
+      "constraint_type": "design"
+    }
+  ],
+  "ranked_beneficial": [
+    {
+      "parameter_name": "steam_cost",
+      "display_name": "Steam Cost",
+      "max_cost_reduction": -20.724246925699916,
+      "priority_score": 0.875
+    },
+    {
+      "parameter_name": "project_contingency_factor",
+      "display_name": "Project Contingency",
+      "max_cost_reduction": -17.50560111841895,
+      "priority_score": 0.8251680335525685
+    },
+    {
+      "parameter_name": "interest_rate",
+      "display_name": "Interest Rate / WACC",
+      "max_cost_reduction": -12.048781843132645,
+      "priority_score": 0.6364634552939794
+    },
+    {
+      "parameter_name": "heat_of_absorption",
+      "display_name": "Heat of Absorption",
+      "max_cost_reduction": -9.344679683489915,
+      "priority_score": 0.5626933316811681
+    },
+    {
+      "parameter_name": "process_contingency_factor",
+      "display_name": "Process Contingency",
+      "max_cost_reduction": -6.925292750143768,
+      "priority_score": 0.5410921158376464
+    },
+    {
+      "parameter_name": "heat_loss_fraction",
+      "display_name": "Heat Loss Fraction",
+      "max_cost_reduction": -0.9969948354573717,
+      "priority_score": 0.34990984506372114
+    },
+    {
+      "parameter_name": "solvent_degradation_rate",
+      "display_name": "Solvent Degradation Rate",
+      "max_cost_reduction": -1.470000000000013,
+      "priority_score": 0.3374333333333337
+    },
+    {
+      "parameter_name": "absorber_pressure",
+      "display_name": "Absorber Pressure",
+      "max_cost_reduction": -3.9440060599758056,
+      "priority_score": 0.3365019999810923
+    },
+    {
+      "parameter_name": "absorber_temperature",
+      "display_name": "Absorber Temperature",
+      "max_cost_reduction": -3.6534148809295885,
+      "priority_score": 0.33182466865010984
+    },
+    {
+      "parameter_name": "equipment_manufacturing_cost_factor",
+      "display_name": "Equipment Manufacturing Cost",
+      "max_cost_reduction": -2.3182281568115712,
+      "priority_score": 0.31954684470434713
+    },
+    {
+      "parameter_name": "base_operators",
+      "display_name": "Base Operators",
+      "max_cost_reduction": -1.3456359471483665,
+      "priority_score": 0.315369078414451
+    },
+    {
+      "parameter_name": "epc_cost_factor",
+      "display_name": "EPC Cost Factor",
+      "max_cost_reduction": -1.6076572455690723,
+      "priority_score": 0.3148963840337388
+    },
+    {
+      "parameter_name": "maintenance_factor",
+      "display_name": "Maintenance Factor",
+      "max_cost_reduction": -2.378811625817491,
+      "priority_score": 0.3046976821078581
+    },
+    {
+      "parameter_name": "electricity_price",
+      "display_name": "Electricity Price",
+      "max_cost_reduction": -0.18276219973245134,
+      "priority_score": 0.2804828659919736
+    },
+    {
+      "parameter_name": "solvent_makeup_cost",
+      "display_name": "Solvent Makeup Cost",
+      "max_cost_reduction": -0.7874999999999943,
+      "priority_score": 0.27362499999999984
+    },
+    {
+      "parameter_name": "labor_rate",
+      "display_name": "Labor Rate",
+      "max_cost_reduction": -0.5767011202064367,
+      "priority_score": 0.2673010336061931
+    },
+    {
+      "parameter_name": "lrhe_effectiveness",
+      "display_name": "LRHE Effectiveness",
+      "max_cost_reduction": -1.3815972339235145,
+      "priority_score": 0.2579185052529996
+    },
+    {
+      "parameter_name": "overhead_factor",
+      "display_name": "Overhead Factor",
+      "max_cost_reduction": -0.34951583042814605,
+      "priority_score": 0.24381880824617772
+    },
+    {
+      "parameter_name": "rich_pump_head",
+      "display_name": "Rich Pump Head",
+      "max_cost_reduction": -0.09430701739456993,
+      "priority_score": 0.24282921052183712
+    }
+  ],
+  "interactions": {
+    "heat_of_absorption": {
+      "trades_off_with": [
+        "co2_capacity"
+      ],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "mea_concentration": {
+      "trades_off_with": [
+        "corrosion_rate",
+        "degradation_rate"
+      ],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "lrhe_effectiveness": {
+      "trades_off_with": [
+        "heat_exchanger_cost"
+      ],
+      "coupled_to": [],
+      "synergistic_with": [
+        "reboiler_duty"
+      ]
+    },
+    "pump_efficiency": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "blower_efficiency": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "boiler_efficiency": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "rich_pump_head": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "lean_pump_head": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "absorber_temperature": {
+      "trades_off_with": [
+        "reaction_kinetics"
+      ],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "stripper_pressure": {
+      "trades_off_with": [
+        "reboiler_temperature",
+        "co2_compression_work"
+      ],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "heat_loss_fraction": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "electricity_price": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "steam_cost": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "solvent_makeup_cost": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "solvent_degradation_rate": {
+      "trades_off_with": [
+        "mea_concentration"
+      ],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "labor_cost_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "maintenance_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "taxes_insurance_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "labor_scaling_exponent": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "supervision_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "overhead_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "delta_T_cooling_water": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "equipment_manufacturing_cost_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "interest_rate": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "project_lifetime": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "epc_cost_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "process_contingency_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "project_contingency_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "owner_cost_factor": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "absorber_pressure": {
+      "trades_off_with": [
+        "blower_power",
+        "absorber_size"
+      ],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "base_operators": {
+      "trades_off_with": [
+        "automation_capex"
+      ],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "labor_rate": {
+      "trades_off_with": [],
+      "coupled_to": [],
+      "synergistic_with": []
+    },
+    "construction_duration": {
+      "trades_off_with": [
+        "afudc_cost"
+      ],
+      "coupled_to": [],
+      "synergistic_with": []
+    }
+  },
+  "tradeoffs": {
+    "heat_of_absorption": {
+      "total_reduction": 9.344679683489915,
+      "capex_contribution": 0.4698754079469239,
+      "opex_contribution": 0.5301245920530754,
+      "capex_change": -4.390835178413155,
+      "opex_change": -4.953844505076752,
+      "net_benefit": -9.344679683489915
+    },
+    "lrhe_effectiveness": {
+      "total_reduction": 1.3815972339235145,
+      "capex_contribution": 0.9342529489101732,
+      "opex_contribution": 1.9342529489101783,
+      "capex_change": 1.2907612899991818,
+      "opex_change": -2.6723585239227035,
+      "net_benefit": -1.3815972339235145
+    },
+    "rich_pump_head": {
+      "total_reduction": 0.09430701739456993,
+      "capex_contribution": 0.42166918592827224,
+      "opex_contribution": 0.5783308140716524,
+      "capex_change": -0.03976636325209171,
+      "opex_change": -0.05454065414247111,
+      "net_benefit": -0.09430701739456993
+    },
+    "absorber_temperature": {
+      "total_reduction": 3.6534148809295885,
+      "capex_contribution": 0.2619579750796177,
+      "opex_contribution": 0.7380420249203803,
+      "capex_change": -0.9570411643340577,
+      "opex_change": -2.6963737165955237,
+      "net_benefit": -3.6534148809295885
+    },
+    "heat_loss_fraction": {
+      "total_reduction": 0.9969948354573717,
+      "capex_contribution": 0.09009609391803175,
+      "opex_contribution": 0.909903906081954,
+      "capex_change": -0.08982534033115996,
+      "opex_change": -0.9071694951261975,
+      "net_benefit": -0.9969948354573717
+    },
+    "electricity_price": {
+      "total_reduction": 0.18276219973245134,
+      "capex_contribution": 0.0,
+      "opex_contribution": 1.0000000000000389,
+      "capex_change": 0.0,
+      "opex_change": -0.18276219973245844,
+      "net_benefit": -0.18276219973245134
+    },
+    "steam_cost": {
+      "total_reduction": 20.724246925699916,
+      "capex_contribution": 0.0,
+      "opex_contribution": 1.0,
+      "capex_change": 0.0,
+      "opex_change": -20.724246925699916,
+      "net_benefit": -20.724246925699916
+    },
+    "solvent_makeup_cost": {
+      "total_reduction": 0.7874999999999943,
+      "capex_contribution": 0.0,
+      "opex_contribution": 1.000000000000009,
+      "capex_change": 0.0,
+      "opex_change": -0.7875000000000014,
+      "net_benefit": -0.7874999999999943
+    },
+    "solvent_degradation_rate": {
+      "total_reduction": 1.470000000000013,
+      "capex_contribution": 0.0,
+      "opex_contribution": 0.9999999999999951,
+      "capex_change": 0.0,
+      "opex_change": -1.470000000000006,
+      "net_benefit": -1.470000000000013
+    },
+    "maintenance_factor": {
+      "total_reduction": 2.378811625817491,
+      "capex_contribution": 0.0,
+      "opex_contribution": 0.999999999999997,
+      "capex_change": 0.0,
+      "opex_change": -2.378811625817484,
+      "net_benefit": -2.378811625817491
+    },
+    "overhead_factor": {
+      "total_reduction": 0.34951583042814605,
+      "capex_contribution": 0.0,
+      "opex_contribution": 1.0000000000000204,
+      "capex_change": 0.0,
+      "opex_change": -0.34951583042815315,
+      "net_benefit": -0.34951583042814605
+    },
+    "equipment_manufacturing_cost_factor": {
+      "total_reduction": 2.3182281568115712,
+      "capex_contribution": 0.8255032516879001,
+      "opex_contribution": 0.17449674831209994,
+      "capex_change": -1.9137048816023992,
+      "opex_change": -0.4045232752091721,
+      "net_benefit": -2.3182281568115712
+    },
+    "interest_rate": {
+      "total_reduction": 12.048781843132645,
+      "capex_contribution": 0.9999999999999994,
+      "opex_contribution": 0.0,
+      "capex_change": -12.048781843132637,
+      "opex_change": 0.0,
+      "net_benefit": -12.048781843132645
+    },
+    "epc_cost_factor": {
+      "total_reduction": 1.6076572455690723,
+      "capex_contribution": 1.0,
+      "opex_contribution": 0.0,
+      "capex_change": -1.6076572455690723,
+      "opex_change": 0.0,
+      "net_benefit": -1.6076572455690723
+    },
+    "process_contingency_factor": {
+      "total_reduction": 6.925292750143768,
+      "capex_contribution": 0.999999999999999,
+      "opex_contribution": 0.0,
+      "capex_change": -6.925292750143761,
+      "opex_change": 0.0,
+      "net_benefit": -6.925292750143768
+    },
+    "project_contingency_factor": {
+      "total_reduction": 17.50560111841895,
+      "capex_contribution": 1.0000000000000004,
+      "opex_contribution": 0.0,
+      "capex_change": -17.50560111841896,
+      "opex_change": 0.0,
+      "net_benefit": -17.50560111841895
+    },
+    "absorber_pressure": {
+      "total_reduction": 3.9440060599758056,
+      "capex_contribution": 0.6824599344939025,
+      "opex_contribution": 0.3175400655060957,
+      "capex_change": -2.6916261173346427,
+      "opex_change": -1.2523799426411557,
+      "net_benefit": -3.9440060599758056
+    },
+    "base_operators": {
+      "total_reduction": 1.3456359471483665,
+      "capex_contribution": 0.0,
+      "opex_contribution": 0.9999999999999895,
+      "capex_change": 0.0,
+      "opex_change": -1.3456359471483523,
+      "net_benefit": -1.3456359471483665
+    },
+    "labor_rate": {
+      "total_reduction": 0.5767011202064367,
+      "capex_contribution": 0.0,
+      "opex_contribution": 1.0,
+      "capex_change": 0.0,
+      "opex_change": -0.5767011202064367,
+      "net_benefit": -0.5767011202064367
+    }
+  }
+}
