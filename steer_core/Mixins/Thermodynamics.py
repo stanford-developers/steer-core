@@ -55,5 +55,6 @@ class ThermodynamicsMixin:
         Returns:
             Density in kg/m³
         """
-        R = 8.314  # J/(mol·K)
-        return P_Pa * MW_kg_mol / (R * T_K)
+
+        from steer_core.Constants.Universal import R_GAS
+        return P_Pa * MW_kg_mol / (R_GAS * T_K)
