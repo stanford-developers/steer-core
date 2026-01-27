@@ -42,6 +42,14 @@ mG_TO_G = 1e-3
 G_TO_mG = 1e3
 CM_TO_UM = 1e4
 UM_TO_CM = 1e-4
+LB_TO_KG = 0.453592
+KG_TO_LB = 1 / 0.453592
+T_TO_SHORT_TON = 1.10231
+SHORT_TON_TO_T = 1 / 1.10231
+LB_TO_SHORT_TON = 1 / 2000
+SHORT_TON_TO_LB = 2000
+LB_TO_T = 1 / 2000 * 1/1.10231
+
 
 # =============================================================================
 # TIME UNITS
@@ -57,8 +65,19 @@ Y_TO_S = 3600.0 * 24.0 * 365
 
 D_TO_H = 24.0
 Y_TO_D = 365 
-Y_TO_H = Y_TO_D * D_TO_H  # Cascaded
+Y_TO_H = Y_TO_D * D_TO_H  # 8760 - Cascaded
+H_TO_Y = 1.0 / Y_TO_H     # From origin/dev
 D_TO_S = D_TO_H * H_TO_S  # Cascaded
+
+# Legacy aliases for compatibility
+SECONDS_PER_MINUTE = MIN_TO_S
+MINUTES_PER_HOUR = H_TO_MIN
+SECONDS_PER_HOUR = H_TO_S
+HOURS_PER_DAY = D_TO_H
+DAYS_PER_YEAR = Y_TO_D
+HOURS_PER_YEAR = Y_TO_H
+SECONDS_PER_YEAR = Y_TO_S
+SECONDS_PER_DAY = D_TO_S
 
 # =============================================================================
 # POWER & ENERGY UNITS
@@ -127,7 +146,15 @@ RAD_TO_DEG = 57.29577951308232
 
 PERCENT_TO_FRACTION = 1e-2
 FRACTION_TO_PERCENT = 1e2
+FRACTION_TO_PPM = 1e6
+PPM_TO_FRACTION = 1e-6
 
-# Derived Volume
-L_TO_M3 = (DM_TO_M)**3
+# =============================================================================
+# VOLUME UNITS
+# =============================================================================
+L_TO_M3 = DM_TO_M**3  # Derived from length (1e-3)
 M3_TO_L = 1.0 / L_TO_M3
+GAL_TO_L = 3.78541
+L_TO_GAL = 1 / 3.78541
+MMGAL_TO_GAL = 1e-6
+GAL_TO_MMGAL = 1e6
