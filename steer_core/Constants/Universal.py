@@ -37,3 +37,12 @@ STANDARD_TEMPERATURE = 273.15  # K
 MMHG_PER_PA = 0.00750062  # mmHg per Pascal
 PA_PER_BAR = 1e5  # Pascal per bar
 GPU_TO_SI = 3.35e-10  # mol/(m²·s·Pa) per GPU (gas permeation unit)
+
+
+# =============================================================================
+# MOLAR MASSES (from origin/dev)
+# =============================================================================
+
+M_G_PER_MOL_NO2 = 46.0055
+M_G_PER_MOL_SO2 = 64.0638
+MW_G_PER_MOL_CO2 = 44.0095
