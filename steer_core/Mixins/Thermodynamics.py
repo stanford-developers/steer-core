@@ -6,6 +6,7 @@ composed with material classes.
 """
 
 import math
+from steer_core.Constants.Universal import R_GAS
 
 
 class ThermodynamicsMixin:
@@ -56,5 +57,4 @@ class ThermodynamicsMixin:
             Density in kg/m³
         """
 
-        from steer_core.Constants.Universal import R_GAS
         return P_Pa * MW_kg_mol / (R_GAS * T_K)

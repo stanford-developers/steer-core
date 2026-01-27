@@ -63,21 +63,16 @@ MIN_TO_S = 60.0
 S_TO_Y = 1.0 / (3600.0 * 24.0 * 365)
 Y_TO_S = 3600.0 * 24.0 * 365  
 
-D_TO_H = 24.0
-Y_TO_D = 365 
-Y_TO_H = Y_TO_D * D_TO_H  # 8760 - Cascaded
-H_TO_Y = 1.0 / Y_TO_H     # From origin/dev
-D_TO_S = D_TO_H * H_TO_S  # Cascaded
+# Time units
+S_TO_H = 1 / 3600
+H_TO_S = 3600
+S_TO_MIN = 1 / 60
+MIN_TO_S = 60
+S_TO_Y = 1 / (3600 * 24 * 365)
+Y_TO_S = 3600 * 24 * 365
+H_TO_Y = 1 / 8760
+Y_TO_H = 8760
 
-# Legacy aliases for compatibility
-SECONDS_PER_MINUTE = MIN_TO_S
-MINUTES_PER_HOUR = H_TO_MIN
-SECONDS_PER_HOUR = H_TO_S
-HOURS_PER_DAY = D_TO_H
-DAYS_PER_YEAR = Y_TO_D
-HOURS_PER_YEAR = Y_TO_H
-SECONDS_PER_YEAR = Y_TO_S
-SECONDS_PER_DAY = D_TO_S
 
 # =============================================================================
 # POWER & ENERGY UNITS
