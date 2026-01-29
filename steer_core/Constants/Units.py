@@ -2,10 +2,7 @@
 Unit conversion constants and functions.
 
 This module provides consistent unit handling across the codebase.
-All conversions are defined as constants or pure functions.
 
-IMPORTANT: Always use these functions/constants for unit conversions.
-           Never use raw multipliers like /1000 or *1000 directly.
 """
 
 import math
@@ -56,18 +53,18 @@ LB_TO_T = 1 / 2000 * 1/1.10231
 # =============================================================================
 S_TO_H = 1.0 / 3600.0
 H_TO_S = 3600.0
-MIN_TO_H = 1.0 / 60.0
-H_TO_MIN = 60.0
-S_TO_MIN = 1.0 / 60.0
-MIN_TO_S = 60.0
+M_TO_H = 1.0 / 60.0
+H_TO_M = 60.0
+S_TO_M = 1.0 / 60.0
+M_TO_S = 60.0
 S_TO_Y = 1.0 / (3600.0 * 24.0 * 365)
 Y_TO_S = 3600.0 * 24.0 * 365  
 
 # Time units
 S_TO_H = 1 / 3600
 H_TO_S = 3600
-S_TO_MIN = 1 / 60
-MIN_TO_S = 60
+S_TO_M = 1 / 60
+M_TO_S = 60
 S_TO_Y = 1 / (3600 * 24 * 365)
 Y_TO_S = 3600 * 24 * 365
 H_TO_Y = 1 / 8760
