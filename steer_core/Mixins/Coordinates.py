@@ -27,9 +27,16 @@ class CoordinateMixin:
         Raises
         ------
         ValueError
-            If input coordinates are invalid
+            If input coordinates are invalid or insufficient valid points
         """
-        polygon = Polygon(coords)
+        # Filter out rows with NaN or None values
+        valid_mask = ~(np.isnan(coords).any(axis=1) | pd.isna(coords).any(axis=1))
+        valid_coords = coords[valid_mask]
+        
+        if len(valid_coords) < 3:
+            raise ValueError(f"Insufficient valid coordinates for polygon creation. Need at least 3, got {len(valid_coords)}")
+        
+        polygon = Polygon(valid_coords)
         circle = minimum_bounding_circle(polygon)
         center = circle.centroid
         first_point = list(circle.exterior.coords)[0]
@@ -842,9 +849,42 @@ class CoordinateMixin:
             coords1: np.ndarray,
             coords2: np.ndarray
     ) -> float:
-        """Calculate the intersection area between two sets of coordinates"""
-        polygon1 = Polygon(coords1)
-        polygon2 = Polygon(coords2)
+        """
+        Calculate the intersection area between two sets of coordinates.
+        
+        Parameters
+        ----------
+        coords1 : np.ndarray
+            First set of coordinates (N, 2) with columns [x, y]
+        coords2 : np.ndarray
+            Second set of coordinates (M, 2) with columns [x, y]
+            
+        Returns
+        -------
+        float
+            Intersection area between the two polygons
+            
+        Raises
+        ------
+        ValueError
+            If either coordinate set has insufficient valid points for polygon creation
+        """
+        # Filter out rows with NaN or None values from coords1
+        valid_mask1 = ~(np.isnan(coords1).any(axis=1) | pd.isna(coords1).any(axis=1))
+        valid_coords1 = coords1[valid_mask1]
+        
+        if len(valid_coords1) < 3:
+            raise ValueError(f"Insufficient valid coordinates in coords1 for polygon creation. Need at least 3, got {len(valid_coords1)}")
+        
+        # Filter out rows with NaN or None values from coords2
+        valid_mask2 = ~(np.isnan(coords2).any(axis=1) | pd.isna(coords2).any(axis=1))
+        valid_coords2 = coords2[valid_mask2]
+        
+        if len(valid_coords2) < 3:
+            raise ValueError(f"Insufficient valid coordinates in coords2 for polygon creation. Need at least 3, got {len(valid_coords2)}")
+        
+        polygon1 = Polygon(valid_coords1)
+        polygon2 = Polygon(valid_coords2)
         intersection = polygon1.intersection(polygon2)
         return intersection.area
 

@@ -326,3 +326,4 @@ class ValidationMixin:
 
         if len(value) == 0:
             raise ValueError(f"{name} must not be an empty list. Provided: {value}.")
+
