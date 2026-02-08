@@ -11,6 +11,7 @@ Goal:
 
 from __future__ import annotations
 
+import calendar
 from datetime import datetime
 from typing import Optional
 
@@ -125,6 +126,116 @@ class DateTimeMixin:
         # Default to hour format
         return dt.strftime(DEFAULT_HOUR_FMT)
 
+
+    @staticmethod
+    def add_years(dt: datetime, years: int) -> datetime:
+        """
+        Add a specified number of years to a datetime.
+
+        Handles the edge case of February 29 (leap day): if the original date is
+        Feb 29 and the target year is not a leap year, the result will be Feb 28.
+
+        Parameters
+        ----------
+        dt : datetime
+            The datetime object to add years to.
+        years : int
+            The number of years to add (can be negative to subtract years).
+
+        Returns
+        -------
+        datetime
+            A new datetime object with the years added.
+
+        Raises
+        ------
+        TypeError
+            If dt is not a datetime object or years is not an integer.
+
+        Examples
+        --------
+        >>> dt = datetime(2026, 2, 2, 14, 0, 0)
+        >>> DateTimeMixin.add_years(dt, 2)
+        datetime.datetime(2028, 2, 2, 14, 0, 0)
+        >>> dt = datetime(2024, 2, 29, 12, 0, 0)  # Leap day
+        >>> DateTimeMixin.add_years(dt, 1)  # 2025 is not a leap year
+        datetime.datetime(2025, 2, 28, 12, 0, 0)
+        >>> DateTimeMixin.add_years(dt, 4)  # 2028 is a leap year
+        datetime.datetime(2028, 2, 29, 12, 0, 0)
+        """
+        if not isinstance(dt, datetime):
+            raise TypeError("dt must be a datetime object")
+        if not isinstance(years, int):
+            raise TypeError("years must be an integer")
+
+        target_year = dt.year + years
+        
+        # Try to create the new datetime with the target year
+        try:
+            return dt.replace(year=target_year)
+        except ValueError:
+            # This happens when the original date is Feb 29 and target year is not a leap year
+            # Fall back to Feb 28
+            return dt.replace(year=target_year, day=28)
+
+
+    @staticmethod
+    def add_months(dt: datetime, months: int) -> datetime:
+        """
+        Add a specified number of months to a datetime.
+
+        Handles month boundaries intelligently: if the original day doesn't exist in
+        the target month (e.g., Jan 31 + 1 month), the result will be the last valid
+        day of that month (e.g., Feb 28 or Feb 29).
+
+        Parameters
+        ----------
+        dt : datetime
+            The datetime object to add months to.
+        months : int
+            The number of months to add (can be negative to subtract months).
+
+        Returns
+        -------
+        datetime
+            A new datetime object with the months added.
+
+        Raises
+        ------
+        TypeError
+            If dt is not a datetime object or months is not an integer.
+
+        Examples
+        --------
+        >>> dt = datetime(2026, 2, 2, 14, 0, 0)
+        >>> DateTimeMixin.add_months(dt, 2)
+        datetime.datetime(2026, 4, 2, 14, 0, 0)
+        >>> dt = datetime(2026, 1, 31, 12, 0, 0)
+        >>> DateTimeMixin.add_months(dt, 1)  # Feb has only 28 days
+        datetime.datetime(2026, 2, 28, 12, 0, 0)
+        >>> dt = datetime(2023, 11, 30, 10, 0, 0)
+        >>> DateTimeMixin.add_months(dt, 3)  # Crosses year boundary
+        datetime.datetime(2024, 2, 29, 10, 0, 0)
+        """
+        if not isinstance(dt, datetime):
+            raise TypeError("dt must be a datetime object")
+        if not isinstance(months, int):
+            raise TypeError("months must be an integer")
+
+        # Calculate target month and year
+        total_months = dt.month + months
+        target_year = dt.year + (total_months - 1) // 12
+        target_month = ((total_months - 1) % 12) + 1
+
+        # Get the last day of the target month
+        _, last_day_of_month = calendar.monthrange(target_year, target_month)
+
+        # Use the minimum of original day and last day of target month
+        target_day = min(dt.day, last_day_of_month)
+
+        return dt.replace(year=target_year, month=target_month, day=target_day)
+
+
     @staticmethod
     def validate_end_after_start(start: datetime, end: datetime, *, strictly: bool = True) -> None:
         """
@@ -167,3 +278,6 @@ class DateTimeMixin:
         else:
             if end < start:
                 raise ValueError(f"end ({end}) must be after or equal to start ({start})")
+    
+
+    
