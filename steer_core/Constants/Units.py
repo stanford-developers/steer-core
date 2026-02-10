@@ -47,6 +47,16 @@ S_TO_Y = 1 / (3600 * 24 * 365)
 Y_TO_S = 3600 * 24 * 365
 H_TO_Y = 1 / 8760
 Y_TO_H = 8760
+S_TO_D = 1 / (3600 * 24)
+D_TO_S = 3600 * 24
+H_TO_D = 1 / 24
+H_TO_W = 1 / (24 * 7)
+Y_TO_M = 12
+
+D_TO_W = 1 / 7
+AVG_D_TO_MONTH = 12 / 365.25
+AVG_D_TO_Y = 1 / 365.25
+Y_TO_AVG_D = 365.25
 
 
 # Energy units
