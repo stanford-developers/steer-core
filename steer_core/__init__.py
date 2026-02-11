@@ -1,4 +1,4 @@
-__version__ = "0.1.41"
+__version__ = "0.1.42"
 
 from .Mixins.Colors import ColorMixin
 from .Mixins.Coordinates import CoordinateMixin
