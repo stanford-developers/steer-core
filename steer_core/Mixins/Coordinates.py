@@ -11,7 +11,7 @@ class CoordinateMixin:
     Provides methods for rotation, area calculation, and coordinate ordering.
     """
     @staticmethod
-    def get_radius_of_points(coords: np.ndarray) -> float:
+    def get_radius_of_points(coords: np.ndarray) -> Tuple[float, Tuple[float, float]]:
         """Calculate the radius of a spiral given its coordinates.
 
         Parameters
@@ -21,8 +21,8 @@ class CoordinateMixin:
 
         Returns
         -------
-        float
-            Radius of the spiral in meters
+        Tuple[float, Tuple[float, float]]
+            (radius, (center_x, center_z)) where radius is in meters
 
         Raises
         ------
