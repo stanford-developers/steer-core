@@ -1,8 +1,11 @@
 from typing import Type, Iterable
+from enum import Enum
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
+from steer_core.Constants.Format import *
 
 ALLOWED_REFERENCE = ["Na/Na+", "Li/Li+"]
 
@@ -213,8 +216,8 @@ class ValidationMixin:
             raise ValueError(f"{name} must be a positive float. Provided: {value} of type {type(value).__name__}.")
 
     @staticmethod
-    def validate_positive_int(value: int, name: str) -> None:
-        """Validate that a value is a strictly positive integer.
+    def validate_positive_int(value: int, name: str, strictly: bool = True) -> None:
+        """Validate that a value is a positive integer.
 
         Parameters
         ----------
@@ -222,28 +225,36 @@ class ValidationMixin:
             The value to validate.
         name : str
             The name of the parameter for error messages.
+        strictly : bool, optional
+            If True (default), value must be strictly positive (> 0).
+            If False, value must be non-negative (>= 0).
 
         Raises
         ------
         TypeError
             If the value is not an integer (bool is rejected even though it is a subclass of int).
         ValueError
-            If the integer is not strictly positive (> 0).
+            If the integer does not meet the positivity requirement.
 
         Examples
         --------
-        >>> ValidationMixin.validate_positive_int(5, 'count')        # OK
-        >>> ValidationMixin.validate_positive_int(0, 'count')        # ValueError
-        >>> ValidationMixin.validate_positive_int(-3, 'count')       # ValueError
-        >>> ValidationMixin.validate_positive_int(True, 'flag')      # TypeError (bool rejected)
-        >>> ValidationMixin.validate_positive_int(12_000, 'cycles')  # OK
+        >>> ValidationMixin.validate_positive_int(5, 'count')              # OK
+        >>> ValidationMixin.validate_positive_int(0, 'count')              # ValueError (strict mode)
+        >>> ValidationMixin.validate_positive_int(0, 'count', strictly=False)  # OK (non-strict mode)
+        >>> ValidationMixin.validate_positive_int(-3, 'count')             # ValueError
+        >>> ValidationMixin.validate_positive_int(True, 'flag')            # TypeError (bool rejected)
+        >>> ValidationMixin.validate_positive_int(12_000, 'cycles')        # OK
         """
         # Reject bool explicitly (bool is subclass of int)
         if isinstance(value, bool) or not isinstance(value, int):
-            raise TypeError(f"{name} must be a positive integer. Provided: {value} (type: {type(value).__name__}).")
+            raise TypeError(f"{name} must be an integer. Provided: {value} (type: {type(value).__name__}).")
 
-        if value <= 0:
-            raise ValueError(f"{name} must be a positive integer (> 0). Provided: {value}.")
+        if strictly:
+            if value <= 0:
+                raise ValueError(f"{name} must be a strictly positive integer (> 0). Provided: {value}.")
+        else:
+            if value < 0:
+                raise ValueError(f"{name} must be a non-negative integer (>= 0). Provided: {value}.")
 
     @staticmethod
     def validate_string(value: str, name: str) -> None:
@@ -326,3 +337,117 @@ class ValidationMixin:
 
         if len(value) == 0:
             raise ValueError(f"{name} must not be an empty list. Provided: {value}.")
+
+    @staticmethod
+    def validate_enum_string(value, enum_class: Type[Enum], name: str) -> None:
+        """
+        Validate that a string value belongs to an enum class.
+
+        Parameters
+        ----------
+        value : str
+            The string value to validate.
+        enum_class : Type[Enum]
+            The enum class to validate against.
+        name : str
+            The name of the parameter for error messages.
+
+        Raises
+        ------
+        TypeError
+            If the value is not a string.
+        ValueError
+            If the string value is not a valid member of the enum class.
+
+        Examples
+        --------
+        >>> from enum import Enum
+        >>> class AllocationShape(Enum):
+        ...     CIRCLE = 'circle'
+        ...     SQUARE = 'square'
+        >>> ValidationMixin.validate_enum_string('circle', AllocationShape, 'shape')  # OK
+        >>> ValidationMixin.validate_enum_string('triangle', AllocationShape, 'shape')  # Raises ValueError
+        """
+        if not isinstance(value, str):
+            raise TypeError(f"{name} must be a string. Provided: {type(value).__name__}.")
+        
+        try:
+            enum_class(value)
+        except ValueError as e:
+            raise ValueError(
+                f"{name} must be one of {[member.value for member in enum_class]}"
+            ) from e
+
+    @staticmethod
+    def validate_datetime_string(value: str, name: str) -> None:
+        """
+        Validate that a string is in a valid datetime format.
+        Accepts either 'YYYY-MM-DD-HH' (hourly) or 'YYYY-MM-DD' (daily) formats.
+
+        Parameters
+        ----------
+        value : str
+            The datetime string to validate.
+        name : str
+            The name of the parameter for error messages.
+
+        Raises
+        ------
+        TypeError
+            If the value is not a string.
+        ValueError
+            If the string is not in a valid datetime format.
+
+        Examples
+        --------
+        >>> ValidationMixin.validate_datetime_string('2024-01-15-14', 'start_dt')  # OK
+        >>> ValidationMixin.validate_datetime_string('2024-01-15', 'start_dt')     # OK
+        >>> ValidationMixin.validate_datetime_string('2024/01/15', 'start_dt')     # Raises ValueError
+        """
+        if not isinstance(value, str):
+            raise TypeError(f"{name} must be a string. Provided: {type(value).__name__}.")
+        
+        # Try both formats
+        formats = [DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT]
+        for fmt in formats:
+            try:
+                datetime.strptime(value, fmt)
+                return  # Valid format found
+            except ValueError:
+                continue
+        
+        # If none of the formats worked, raise an error
+        raise ValueError(
+            f"{name} must be in format 'YYYY-MM-DD-HH' or 'YYYY-MM-DD'. Provided: {value}."
+        )
+
+    @staticmethod
+    def validate_number(value, name: str) -> None:
+        """
+        Validate that a value is a numeric amount (int or float, but not bool).
+
+        Parameters
+        ----------
+        value : int or float
+            The numeric value to validate.
+        name : str
+            The name of the parameter for error messages.
+
+        Raises
+        ------
+        TypeError
+            If the value is a bool or not a numeric type (int or float).
+
+        Examples
+        --------
+        >>> ValidationMixin.validate_amount(42, 'amount')      # OK
+        >>> ValidationMixin.validate_amount(3.14, 'amount')    # OK
+        >>> ValidationMixin.validate_amount(True, 'amount')    # Raises TypeError
+        >>> ValidationMixin.validate_amount('100', 'amount')   # Raises TypeError
+        """
+        if isinstance(value, bool):
+            raise TypeError(f"{name} must be a number (int or float), not bool.")
+        
+        if not isinstance(value, (int, float)):
+            raise TypeError(f"{name} must be a number (int or float). Provided: {type(value).__name__}.")
+

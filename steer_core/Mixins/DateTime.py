@@ -128,9 +128,9 @@ class DateTimeMixin:
 
 
     @staticmethod
-    def add_years(dt: datetime, years: int) -> datetime:
+    def shift_years(dt: datetime, years: int) -> datetime:
         """
-        Add a specified number of years to a datetime.
+        Shift a datetime by a specified number of years (forward or backward).
 
         Handles the edge case of February 29 (leap day): if the original date is
         Feb 29 and the target year is not a leap year, the result will be Feb 28.
@@ -138,14 +138,14 @@ class DateTimeMixin:
         Parameters
         ----------
         dt : datetime
-            The datetime object to add years to.
+            The datetime object to shift.
         years : int
-            The number of years to add (can be negative to subtract years).
+            The number of years to shift (positive to add, negative to subtract).
 
         Returns
         -------
         datetime
-            A new datetime object with the years added.
+            A new datetime object with the years shifted.
 
         Raises
         ------
@@ -155,13 +155,15 @@ class DateTimeMixin:
         Examples
         --------
         >>> dt = datetime(2026, 2, 2, 14, 0, 0)
-        >>> DateTimeMixin.add_years(dt, 2)
+        >>> DateTimeMixin.shift_years(dt, 2)
         datetime.datetime(2028, 2, 2, 14, 0, 0)
+        >>> DateTimeMixin.shift_years(dt, -2)
+        datetime.datetime(2024, 2, 2, 14, 0, 0)
         >>> dt = datetime(2024, 2, 29, 12, 0, 0)  # Leap day
-        >>> DateTimeMixin.add_years(dt, 1)  # 2025 is not a leap year
+        >>> DateTimeMixin.shift_years(dt, 1)  # 2025 is not a leap year
         datetime.datetime(2025, 2, 28, 12, 0, 0)
-        >>> DateTimeMixin.add_years(dt, 4)  # 2028 is a leap year
-        datetime.datetime(2028, 2, 29, 12, 0, 0)
+        >>> DateTimeMixin.shift_years(dt, -1)  # 2023 is not a leap year
+        datetime.datetime(2023, 2, 28, 12, 0, 0)
         """
         if not isinstance(dt, datetime):
             raise TypeError("dt must be a datetime object")
@@ -180,9 +182,9 @@ class DateTimeMixin:
 
 
     @staticmethod
-    def add_months(dt: datetime, months: int) -> datetime:
+    def shift_months(dt: datetime, months: int) -> datetime:
         """
-        Add a specified number of months to a datetime.
+        Shift a datetime by a specified number of months (forward or backward).
 
         Handles month boundaries intelligently: if the original day doesn't exist in
         the target month (e.g., Jan 31 + 1 month), the result will be the last valid
@@ -191,14 +193,14 @@ class DateTimeMixin:
         Parameters
         ----------
         dt : datetime
-            The datetime object to add months to.
+            The datetime object to shift.
         months : int
-            The number of months to add (can be negative to subtract months).
+            The number of months to shift (positive to add, negative to subtract).
 
         Returns
         -------
         datetime
-            A new datetime object with the months added.
+            A new datetime object with the months shifted.
 
         Raises
         ------
@@ -208,14 +210,16 @@ class DateTimeMixin:
         Examples
         --------
         >>> dt = datetime(2026, 2, 2, 14, 0, 0)
-        >>> DateTimeMixin.add_months(dt, 2)
+        >>> DateTimeMixin.shift_months(dt, 2)
         datetime.datetime(2026, 4, 2, 14, 0, 0)
+        >>> DateTimeMixin.shift_months(dt, -2)
+        datetime.datetime(2025, 12, 2, 14, 0, 0)
         >>> dt = datetime(2026, 1, 31, 12, 0, 0)
-        >>> DateTimeMixin.add_months(dt, 1)  # Feb has only 28 days
+        >>> DateTimeMixin.shift_months(dt, 1)  # Feb has only 28 days
         datetime.datetime(2026, 2, 28, 12, 0, 0)
-        >>> dt = datetime(2023, 11, 30, 10, 0, 0)
-        >>> DateTimeMixin.add_months(dt, 3)  # Crosses year boundary
-        datetime.datetime(2024, 2, 29, 10, 0, 0)
+        >>> dt = datetime(2026, 3, 31, 12, 0, 0)
+        >>> DateTimeMixin.shift_months(dt, -1)  # Feb has only 28 days
+        datetime.datetime(2026, 2, 28, 12, 0, 0)
         """
         if not isinstance(dt, datetime):
             raise TypeError("dt must be a datetime object")
