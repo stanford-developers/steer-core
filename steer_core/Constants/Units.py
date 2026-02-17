@@ -61,6 +61,7 @@ Y_TO_AVG_D = 365.25
 # Energy units
 W_TO_KW = 1e-3
 J_TO_WH = 1 / 3600
+KW_TO_W = 1e3
 
 # Angle units
 DEG_TO_RAD = 0.017453292519943295
