@@ -338,8 +338,6 @@ class ValidationMixin:
         if len(value) == 0:
             raise ValueError(f"{name} must not be an empty list. Provided: {value}.")
 
-<<<<<<< HEAD
-=======
     @staticmethod
     def validate_enum_string(value, enum_class: Type[Enum], name: str) -> None:
         """
@@ -453,4 +451,3 @@ class ValidationMixin:
         if not isinstance(value, (int, float)):
             raise TypeError(f"{name} must be a number (int or float). Provided: {type(value).__name__}.")
 
->>>>>>> daf2456164a92cba2634816fa9f99b3e4947084f
