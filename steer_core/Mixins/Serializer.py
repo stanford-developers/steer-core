@@ -233,9 +233,18 @@ class SerializerMixin:
     def from_database(cls: type[T], name: str, table_name: str = None) -> T:
         """
         Pull object from the database by name.
-        
+
         Subclasses must define a '_table_name' class variable (str or list of str)
         unless table_name is explicitly provided.
+
+        The backend is selected by the ``OPENCELL_ENV`` environment variable:
+
+        - ``development`` — uses the local SQLite database via
+          ``steer_opencell_data.DataManager``. No network calls, works offline.
+          Requires ``steer-opencell-data`` to be installed with ``database.db``.
+        - ``production`` (default) — uses the REST API via
+          ``steer_core.Data.DataManager``. Requires the ``API_URL`` env var
+          pointing to the deployed Lambda endpoint.
 
         Parameters
         ----------
@@ -249,7 +258,7 @@ class SerializerMixin:
         -------
         T
             Instance of the class.
-            
+
         Raises
         ------
         NotImplementedError
@@ -257,8 +266,12 @@ class SerializerMixin:
         ValueError
             If the object name is not found in any of the tables.
         """
-        from steer_opencell_data.DataManager import DataManager
-        
+        from steer_core.Data import is_development
+        if is_development():
+            from steer_opencell_data.DataManager import DataManager
+        else:
+            from steer_core.Data.DataManager import DataManager
+
         database = DataManager()
         
         # Get list of tables to search
