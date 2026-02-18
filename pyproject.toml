@@ -35,6 +35,7 @@ dependencies = [
     "scipy==1.15.3",
     "msgpack==1.1.1",
     "msgpack-numpy==0.4.8",
+    "requests>=2.31.0",
     "nbformat==5.10.4",
     "shapely==2.1.1",
 ]
@@ -67,7 +68,7 @@ where = ["."]
 include = ["steer_core*"]
 
 [tool.setuptools.package-data]
-"steer_core.Data" = ["database.db"]
+"steer_core.Data" = ["*.py"]
 
 [tool.setuptools.dynamic]
 version = {attr = "steer_core.__version__"}
