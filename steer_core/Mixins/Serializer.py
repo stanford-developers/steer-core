@@ -379,3 +379,5 @@ class SerializerMixin:
             f"'{name}' not found in tables {tables_to_search}. "
             f"Available: {all_available}"
         )
+
+
