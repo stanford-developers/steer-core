@@ -1,9 +1,9 @@
 import importlib
 import msgpack
 import msgpack_numpy as m
-import weakref
 import lz4.frame
 import zlib
+import numpy as np
 from typing import TypeVar, Any
 from datetime import datetime
 from enum import Enum
@@ -81,10 +81,6 @@ class SerializerMixin:
         # Primitive types - return immediately (most common case)
         if value_type in (int, float, str, bool, bytes, type(None)):
             return value
-        
-        # Skip weakref objects - they represent non-owning references
-        if value_type is weakref.ref:
-            return None
         
         # Skip functions/methods without _to_dict
         if callable(value) and not hasattr(value, '_to_dict'):
@@ -183,9 +179,10 @@ class SerializerMixin:
         """
         result = {}
         for key, value in self.__dict__.items():
-            # Skip non-serializable types inline (single pass)
-            if isinstance(value, weakref.ref):
+            # Skip _parent - PropagationMixin rebuilds it via _from_dict
+            if key == '_parent':
                 continue
+            # Skip non-serializable callables
             if callable(value) and not hasattr(value, '_to_dict'):
                 continue
             result[key] = self._serialize_value(value)
@@ -382,4 +379,3 @@ class SerializerMixin:
             f"'{name}' not found in tables {tables_to_search}. "
             f"Available: {all_available}"
         )
-        
