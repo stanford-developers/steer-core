@@ -1,14 +1,37 @@
+import importlib
 import msgpack
 import msgpack_numpy as m
+import weakref
+import lz4.frame
 import zlib
 from typing import TypeVar, Any
 from datetime import datetime
 from enum import Enum
 
+# Patch msgpack for numpy support once at module import
+m.patch()
+
+# Module-level cache for imported modules (avoids repeated importlib calls)
+_module_cache: dict[str, type] = {}
+
 T = TypeVar('T', bound='SerializerMixin')
 
 
+def _get_class(class_path: str) -> type:
+    """Get class from module path with caching."""
+    if class_path not in _module_cache:
+        module_name, class_name = class_path.rsplit('.', 1)
+        module = importlib.import_module(module_name)
+        _module_cache[class_path] = getattr(module, class_name)
+    return _module_cache[class_path]
+
+
 class SerializerMixin:
+    
+    # Compression markers for backward compatibility
+    _MARKER_LZ4 = b'\x02'
+    _MARKER_ZLIB = b'\x01'
+    _MARKER_NONE = b'\x00'
     
     def serialize(self, compress: bool = True) -> bytes:
         """
@@ -24,7 +47,6 @@ class SerializerMixin:
         bytes
             The serialized byte representation of the object.
         """
-        m.patch()  # Enable numpy support
         # Include class information for proper deserialization
         obj_dict = {
             '_class': f"{self.__class__.__module__}.{self.__class__.__name__}",
@@ -33,14 +55,15 @@ class SerializerMixin:
         data = msgpack.packb(obj_dict, use_bin_type=True)
         
         if compress:
-            # Add marker byte to indicate compression
-            return b'\x01' + zlib.compress(data, level=6)
+            # Use LZ4 for fast compression
+            return self._MARKER_LZ4 + lz4.frame.compress(data)
         else:
-            return b'\x00' + data
+            return self._MARKER_NONE + data
     
     def _serialize_value(self, value: Any) -> Any:
         """
         Recursively serialize a value, handling nested structures.
+        Optimized with type-based dispatch for common types.
         
         Parameters
         ----------
@@ -52,56 +75,106 @@ class SerializerMixin:
         Any
             The serialized representation.
         """
+        # Fast path: check type directly for common cases
+        value_type = type(value)
+        
+        # Primitive types - return immediately (most common case)
+        if value_type in (int, float, str, bool, bytes, type(None)):
+            return value
+        
+        # Skip weakref objects - they represent non-owning references
+        if value_type is weakref.ref:
+            return None
+        
+        # Skip functions/methods without _to_dict
+        if callable(value) and not hasattr(value, '_to_dict'):
+            return None
+        
+        # Objects with _to_dict method (SerializerMixin instances)
         if hasattr(value, '_to_dict'):
-            # Add marker and class info for object reconstruction
             return {
                 '__object__': True,
                 '_class': f"{value.__class__.__module__}.{value.__class__.__name__}",
                 **value._to_dict()
             }
-        elif isinstance(value, datetime):
+        
+        # datetime handling
+        if value_type is datetime:
             return {'__datetime__': value.isoformat()}
-        elif isinstance(value, Enum):
+        
+        # Enum handling
+        if isinstance(value, Enum):
             return {
                 '__enum__': True,
                 'class': f"{value.__class__.__module__}.{value.__class__.__name__}",
                 'value': value.value
             }
-        elif isinstance(value, tuple):
-            # Recursively serialize tuple items
+        
+        # Tuple handling
+        if value_type is tuple:
             return {
                 '__tuple__': True,
                 'items': [self._serialize_value(item) for item in value]
             }
-        elif isinstance(value, list):
-            # Recursively serialize list items
+        
+        # List handling
+        if value_type is list:
             return [self._serialize_value(item) for item in value]
-        elif isinstance(value, dict):
-            # Handle dictionaries with object keys or values
-            has_object_keys = value and any(hasattr(k, '_to_dict') for k in value.keys())
-            has_object_values = value and any(hasattr(v, '_to_dict') for v in value.values())
+        
+        # Dict handling - single pass detection and serialization
+        if value_type is dict:
+            return self._serialize_dict(value)
+        
+        # Fallback for other types (numpy arrays handled by msgpack_numpy)
+        return value
+    
+    def _serialize_dict(self, d: dict) -> dict:
+        """
+        Serialize dictionary in single pass, detecting object keys/values during iteration.
+        
+        Parameters
+        ----------
+        d : dict
+            Dictionary to serialize.
             
-            if has_object_keys or has_object_values:
-                return {
-                    '__object_dict__': True,
-                    'items': [
-                        {
-                            'key': self._serialize_value(k),
-                            'value': self._serialize_value(v)
-                        }
-                        for k, v in value.items()
-                    ]
-                }
-            else:
-                # Recursively serialize regular dict values
-                return {k: self._serialize_value(v) for k, v in value.items()}
+        Returns
+        -------
+        dict
+            Serialized dictionary representation.
+        """
+        if not d:
+            return {}
+        
+        # Single-pass: serialize and detect objects simultaneously
+        items = []
+        has_objects = False
+        
+        for k, v in d.items():
+            k_serialized = self._serialize_value(k)
+            v_serialized = self._serialize_value(v)
+            
+            # Check if key or value became an object marker
+            k_is_obj = isinstance(k_serialized, dict) and k_serialized.get('__object__')
+            v_is_obj = isinstance(v_serialized, dict) and v_serialized.get('__object__')
+            
+            if k_is_obj or v_is_obj:
+                has_objects = True
+            
+            items.append((k, k_serialized, v_serialized))
+        
+        if has_objects:
+            return {
+                '__object_dict__': True,
+                'items': [{'key': k_ser, 'value': v_ser} for _, k_ser, v_ser in items]
+            }
         else:
-            return value
+            return {k: v_ser for k, _, v_ser in items}
     
     def _to_dict(self) -> dict:
         """
         Convert object to dictionary for serialization.
         Override this in subclasses to customize serialization behavior.
+        Single-pass implementation for efficiency.
         
         Returns
         -------
@@ -110,6 +183,11 @@ class SerializerMixin:
         """
         result = {}
         for key, value in self.__dict__.items():
+            # Skip non-serializable types inline (single pass)
+            if isinstance(value, weakref.ref):
+                continue
+            if callable(value) and not hasattr(value, '_to_dict'):
+                continue
             result[key] = self._serialize_value(value)
         return result
     
@@ -118,6 +196,7 @@ class SerializerMixin:
         """
         Deserialize byte data into an object.
         Automatically detects and decompresses if needed.
+        Supports both LZ4 (new) and zlib (legacy) compression.
 
         Parameters
         ----------
@@ -129,10 +208,12 @@ class SerializerMixin:
         T
             Instance of the class.
         """
-        m.patch()  # Enable numpy support
-        
-        # Check compression marker
-        if data[0:1] == b'\x01':
+        # Check compression marker and decompress accordingly
+        marker = data[0:1]
+        if marker == cls._MARKER_LZ4:
+            data = lz4.frame.decompress(data[1:])
+        elif marker == cls._MARKER_ZLIB:
+            # Backward compatibility with zlib-compressed data
             data = zlib.decompress(data[1:])
         else:
             data = data[1:]
@@ -141,10 +222,7 @@ class SerializerMixin:
         
         # Use stored class information if available
         if '_class' in obj_dict:
-            import importlib
-            module_name, class_name = obj_dict['_class'].rsplit('.', 1)
-            module = importlib.import_module(module_name)
-            actual_cls = getattr(module, class_name)
+            actual_cls = _get_class(obj_dict['_class'])
             # Remove class marker before reconstructing
             obj_data = {k: v for k, v in obj_dict.items() if k != '_class'}
             return actual_cls._from_dict(obj_data)
@@ -156,6 +234,7 @@ class SerializerMixin:
     def _deserialize_value(cls, value: Any) -> Any:
         """
         Recursively deserialize a value, handling nested structures.
+        Optimized with cached module lookups.
         
         Parameters
         ----------
@@ -167,40 +246,35 @@ class SerializerMixin:
         Any
             The deserialized object.
         """
-        if isinstance(value, dict):
-            if '__datetime__' in value:
+        # Fast path for non-dict/list types
+        value_type = type(value)
+        
+        if value_type is dict:
+            # Check special markers in priority order (most common first)
+            if '__object__' in value:
+                # Reconstruct regular object using cached class lookup
+                obj_class = _get_class(value['_class'])
+                obj_data = {k: v for k, v in value.items() if k not in ('__object__', '_class')}
+                return obj_class._from_dict(obj_data)
+            elif '__datetime__' in value:
                 return datetime.fromisoformat(value['__datetime__'])
             elif '__enum__' in value:
-                # Reconstruct enum
-                module_name, class_name = value['class'].rsplit('.', 1)
-                import importlib
-                module = importlib.import_module(module_name)
-                enum_class = getattr(module, class_name)
+                # Reconstruct enum using cached class lookup
+                enum_class = _get_class(value['class'])
                 return enum_class(value['value'])
             elif '__tuple__' in value:
                 # Recursively reconstruct tuple items
                 return tuple(cls._deserialize_value(item) for item in value['items'])
-            elif '__object__' in value:
-                # Reconstruct regular object
-                import importlib
-                module_name, class_name = value['_class'].rsplit('.', 1)
-                module = importlib.import_module(module_name)
-                obj_class = getattr(module, class_name)
-                # Remove marker fields before passing to _from_dict
-                obj_data = {k: v for k, v in value.items() if k not in ('__object__', '_class')}
-                return obj_class._from_dict(obj_data)
             elif '__object_dict__' in value:
                 # Reconstruct dictionary with object keys or values
-                reconstructed_dict = {}
-                for item in value['items']:
-                    key_obj = cls._deserialize_value(item['key'])
-                    value_obj = cls._deserialize_value(item['value'])
-                    reconstructed_dict[key_obj] = value_obj
-                return reconstructed_dict
+                return {
+                    cls._deserialize_value(item['key']): cls._deserialize_value(item['value'])
+                    for item in value['items']
+                }
             else:
                 # Recursively deserialize regular dict values
                 return {k: cls._deserialize_value(v) for k, v in value.items()}
-        elif isinstance(value, list):
+        elif value_type is list:
             # Recursively deserialize list items
             return [cls._deserialize_value(item) for item in value]
         else:
