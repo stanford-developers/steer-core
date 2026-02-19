@@ -1,6 +1,5 @@
 """Mixin for update propagation through hierarchical object trees."""
 
-import weakref
 from typing import Optional, Any
 
 
@@ -12,16 +11,15 @@ class PropagationMixin:
     - `update()`: Recalculates properties of the current object only
     - `propagate_changes()`: Recalculates this object then bubbles up to root
     
-    Each object can have a parent reference (stored as a weakref to avoid 
-    circular reference memory issues). When a child is assigned to a parent,
+    Each object can have a parent reference. When a child is assigned to a parent,
     the parent should call `child._set_parent(self)` to establish the link.
+    Python's cyclic garbage collector handles any circular references.
     
     Serialization Note
     ------------------
-    This mixin relies on SerializerMixin for serialization. The `_parent` 
-    weakref is automatically handled (serializes to None). Parent references
-    are re-established when objects are reassembled after deserialization
-    (via setters that call `_set_parent`).
+    The `_parent` reference is skipped during serialization to avoid circular
+    serialization. Parent references are re-established when objects are 
+    reassembled after deserialization (via setters that call `_set_parent`).
     
     Example Usage
     -------------
@@ -42,7 +40,7 @@ class PropagationMixin:
     cell.reference_assembly.propagate_changes()  # finish propagation
     """
     
-    _parent: Optional[weakref.ref] = None
+    _parent: Optional[Any] = None
     
     # -------------------------------------------------------------------------
     # Parent reference management
@@ -56,26 +54,19 @@ class PropagationMixin:
         ----------
         parent : Optional[Any]
             The parent object, or None to clear the parent reference.
-            Stored as a weak reference to avoid circular reference issues.
         """
-        if parent is None:
-            self._parent = None
-        else:
-            self._parent = weakref.ref(parent)
+        self._parent = parent
     
     def _get_parent(self) -> Optional[Any]:
         """
-        Get the parent object if it still exists.
+        Get the parent object if set.
         
         Returns
         -------
         Optional[Any]
-            The parent object, or None if no parent is set or parent 
-            has been garbage collected.
+            The parent object, or None if no parent is set.
         """
-        if self._parent is None:
-            return None
-        return self._parent()
+        return self._parent
     
     def update(self) -> None:
         """
@@ -175,3 +166,30 @@ class PropagationMixin:
             for item in value.values():
                 if hasattr(item, '_set_parent'):
                     item._set_parent(self)
+
+    def __deepcopy__(self, memo):
+        """Create a deep copy with properly restored parent references."""
+        import copy
+        
+        # Temporarily remove parent (weakrefs don't copy well)
+        old_parent = self._parent
+        self._parent = None
+        
+        # Perform the copy
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        
+        for k, v in self.__dict__.items():
+            if k == '_parent':
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        
+        # Restore original's parent
+        self._parent = old_parent
+        
+        # Restore parent references in the copy
+        result._restore_child_parent_refs()
+        
+        return result
