@@ -38,6 +38,7 @@ dependencies = [
     "requests>=2.31.0",
     "nbformat==5.10.4",
     "shapely==2.1.1",
+    "lz4==4.4.4"
 ]
 
 [project.urls]
