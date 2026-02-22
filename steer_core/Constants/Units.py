@@ -51,6 +51,7 @@ D_TO_S = 3600 * 24
 H_TO_D = 1 / 24
 H_TO_W = 1 / (24 * 7)
 Y_TO_M = 12
+H_TO_US = 3600000
 
 D_TO_W = 1 / 7
 AVG_D_TO_MONTH = 12 / 365.25
