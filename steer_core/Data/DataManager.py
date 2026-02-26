@@ -434,17 +434,32 @@ class DataManager:
             json={"name": new_name},
         )
 
-    def publish_cell(self, source_table: str, source_name: str, new_name: str) -> dict:
-        """Publish *source_name* to ``cell_references`` with *new_name*.
+    def publish_cell(
+        self,
+        source_table: str,
+        source_name: str,
+        new_name: str,
+        target_table: str | None = None,
+    ) -> dict:
+        """Publish *source_name* with *new_name*.
 
         Admin only.  Raises ``ConflictError`` if *new_name* is taken.
+
+        Parameters
+        ----------
+        target_table : str, optional
+            Destination table (``"cell_references"`` or ``"teardowns"``).
+            Defaults to ``"cell_references"`` on the server side.
         """
         encoded = self._encode(source_name)
+        body: dict = {"name": new_name}
+        if target_table:
+            body["target_table"] = target_table
         return self._request(
             "POST",
             f"/cells/{source_table}/{encoded}/publish",
             auth_required=True,
-            json={"name": new_name},
+            json=body,
         )
 
     def check_name_available(self, name: str) -> bool:
