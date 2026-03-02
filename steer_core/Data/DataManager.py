@@ -30,7 +30,7 @@ MATERIAL_TABLES = {
     "prismatic_container_materials",
 }
 
-CELL_TABLES = {"cell_references", "teardowns", "user_designs"}
+CELL_TABLES = {"cell_references", "teardowns", "user_designs", "cell_submissions"}
 
 ALL_TABLES = MATERIAL_TABLES | CELL_TABLES
 
@@ -460,6 +460,31 @@ class DataManager:
             f"/cells/{source_table}/{encoded}/publish",
             auth_required=True,
             json=body,
+        )
+
+    def submit_cell(self, source_table: str, source_name: str) -> dict:
+        """Submit a cell from *source_table* for admin review.
+
+        Copies the cell to ``cell_submissions``.  Only the owner (non-admin)
+        can submit.  Returns the new submission metadata.
+        """
+        encoded = self._encode(source_name)
+        return self._request(
+            "POST",
+            f"/cells/{source_table}/{encoded}/submit",
+            auth_required=True,
+        )
+
+    def reject_cell(self, table_name: str, name: str) -> None:
+        """Reject (hard-delete) a submission from *table_name*.
+
+        Admin only.  The DynamoDB item and S3 object are permanently removed.
+        """
+        encoded = self._encode(name)
+        self._request(
+            "POST",
+            f"/cells/{table_name}/{encoded}/reject",
+            auth_required=True,
         )
 
     def check_name_available(self, name: str) -> bool:
