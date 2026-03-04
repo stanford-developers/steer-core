@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Modelling energy storage from cell to site - STEER OpenCell Design"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = {text = "CC-BY-NC-SA-4.0"}
 authors = [
     {name = "Nicholas Siemons", email = "nsiemons@stanford.edu"},
 ]
@@ -22,7 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: MIT License",
+    "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
@@ -33,6 +33,12 @@ dependencies = [
     "datetime==5.5",
     "plotly==6.2.0",
     "scipy==1.15.3",
+    "msgpack==1.1.1",
+    "msgpack-numpy==0.4.8",
+    "requests>=2.31.0",
+    "nbformat==5.10.4",
+    "shapely==2.1.1",
+    "lz4==4.4.4"
 ]
 
 [project.urls]
@@ -63,7 +69,7 @@ where = ["."]
 include = ["steer_core*"]
 
 [tool.setuptools.package-data]
-"steer_core.Data" = ["database.db"]
+"steer_core.Data" = ["*.py"]
 
 [tool.setuptools.dynamic]
 version = {attr = "steer_core.__version__"}
