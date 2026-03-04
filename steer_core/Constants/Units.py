@@ -11,6 +11,7 @@ DM_TO_M = 1e-1
 MG_TO_KG = 1e-6
 KG_TO_MG = 1e6
 M_TO_UM = 1e6
+MM_TO_UM = 1e3
 UM_TO_M = 1e-6
 MM_TO_CM = 1e-1
 CM_TO_MM = 1e1
@@ -30,7 +31,7 @@ SHORT_TON_TO_T = 1 / 1.10231
 LB_TO_SHORT_TON = 1 / 2000
 SHORT_TON_TO_LB = 2000
 LB_TO_T = 1 / 2000 * 1/1.10231
-
+MM_TO_UM = 1e3
 
 
 # Current units
@@ -46,11 +47,22 @@ S_TO_Y = 1 / (3600 * 24 * 365)
 Y_TO_S = 3600 * 24 * 365
 H_TO_Y = 1 / 8760
 Y_TO_H = 8760
+S_TO_D = 1 / (3600 * 24)
+D_TO_S = 3600 * 24
+H_TO_D = 1 / 24
+H_TO_W = 1 / (24 * 7)
+Y_TO_M = 12
+
+D_TO_W = 1 / 7
+AVG_D_TO_MONTH = 12 / 365.25
+AVG_D_TO_Y = 1 / 365.25
+Y_TO_AVG_D = 365.25
 
 
 # Energy units
 W_TO_KW = 1e-3
 J_TO_WH = 1 / 3600
+KW_TO_W = 1e3
 
 # Angle units
 DEG_TO_RAD = 0.017453292519943295
@@ -68,4 +80,8 @@ GAL_TO_L = 3.78541
 L_TO_GAL = 1 / 3.78541
 MMGAL_TO_GAL = 1e-6
 GAL_TO_MMGAL = 1e6
+
+
+
+
 
