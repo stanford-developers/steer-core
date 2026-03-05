@@ -55,11 +55,15 @@ H_TO_US = 3600000
 D_TO_H = 24
 W_TO_D = 7
 S_TO_US = 1000
+M_TO_Y = 1 / 12
+
 
 D_TO_W = 1 / 7
 AVG_D_TO_MONTH = 12 / 365.25
 AVG_D_TO_Y = 1 / 365.25
 Y_TO_AVG_D = 365.25
+AVG_W_TO_Y = 1 / (365.25 / 7)
+AVG_H_TO_Y = 1 / (365.25 * 24)
 
 
 # Energy units
