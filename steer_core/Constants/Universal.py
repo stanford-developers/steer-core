@@ -1,5 +1,6 @@
 ## Constants
 PI = 3.14159265358979323846
+TWO_PI = 2.0 * PI
 
 # Molar Masses
 M_G_PER_MOL_NO2 = 46.0055
