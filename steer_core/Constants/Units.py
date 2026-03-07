@@ -81,6 +81,11 @@ L_TO_GAL = 1 / 3.78541
 MMGAL_TO_GAL = 1e-6
 GAL_TO_MMGAL = 1e6
 
+# Composite energy conversions
+ENERGY_CONVERSION_FACTOR = S_TO_H                               # J/s → Wh
+VOLUMETRIC_ENERGY_CONVERSION = S_TO_H / M_TO_DM**3              # J/m³ → Wh/L
+NORMALISED_COST_CONVERSION = 1 / (ENERGY_CONVERSION_FACTOR * W_TO_KW)  # → $/kWh
+
 
 
 
