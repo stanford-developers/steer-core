@@ -5,6 +5,21 @@ import numpy as np
 
 class DunderMixin:
 
+    def _get_comparable_float_properties(self):
+        """Get all @property decorated attributes that return floats."""
+        float_properties = []
+        for cls in self.__class__.__mro__:
+            for name, value in cls.__dict__.items():
+                if isinstance(value, property):
+                    if not self._should_exclude_property(name):
+                        try:
+                            prop_value = getattr(self, name)
+                            if isinstance(prop_value, (float, np.floating, int, np.integer)):
+                                float_properties.append(name)
+                        except Exception:
+                            continue  # Skip properties that raise exceptions
+        return float_properties
+
     def _get_comparable_properties(self):
         """Get all comparable properties from the class hierarchy."""
         properties = []
