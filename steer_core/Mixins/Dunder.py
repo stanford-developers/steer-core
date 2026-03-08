@@ -11,7 +11,7 @@ class DunderMixin:
         for cls in self.__class__.__mro__:
             for name, value in cls.__dict__.items():
                 if isinstance(value, property):
-                    if not self._should_exclude_property(name):
+                    if not self._should_exclude_property_viewable_stat(name):
                         try:
                             prop_value = getattr(self, name)
                             if isinstance(prop_value, (float, np.floating, int, np.integer)):
@@ -36,6 +36,15 @@ class DunderMixin:
             name.endswith('_trace') or
             name.endswith('_range') or 
             name in {'last_updated', 'properties'}
+        )
+    
+    def _should_exclude_property_viewable_stat(self, name):
+        """Check if a property should be excluded from viewable stats."""
+        return (
+            name.endswith('_trace') or
+            name.endswith('_range') or 
+            name in {'last_updated', 'properties'} or
+            'datum' in name.lower()
         )
 
     def _is_plotly_trace(self, obj):
