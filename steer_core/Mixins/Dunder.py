@@ -1,9 +1,16 @@
 
 
+import typing
+
 import numpy as np
+
+# Numeric types accepted by the float-property class-level introspection.
+_NUMERIC_TYPES = (float, int, np.floating, np.integer)
 
 
 class DunderMixin:
+
+    # ── instance methods (unchanged API) ───────────────────────────────
 
     def _get_comparable_float_properties(self):
         """Get all @property decorated attributes that return floats."""
@@ -32,20 +39,97 @@ class DunderMixin:
 
     def _should_exclude_property(self, name):
         """Check if a property should be excluded from comparison."""
+        return DunderMixin._should_exclude_property_static(name)
+
+    def _should_exclude_property_viewable_stat(self, name):
+        """Check if a property should be excluded from viewable stats."""
+        return DunderMixin._should_exclude_property_viewable_stat_static(name)
+
+    # ── static helpers (no instance required) ──────────────────────────
+
+    @staticmethod
+    def _should_exclude_property_static(name: str) -> bool:
+        """Check if a property should be excluded from comparison."""
         return (
             name.endswith('_trace') or
-            name.endswith('_range') or 
+            name.endswith('_range') or
             name in {'last_updated', 'properties'}
         )
-    
-    def _should_exclude_property_viewable_stat(self, name):
+
+    @staticmethod
+    def _should_exclude_property_viewable_stat_static(name: str) -> bool:
         """Check if a property should be excluded from viewable stats."""
         return (
             name.endswith('_trace') or
-            name.endswith('_range') or 
+            name.endswith('_range') or
             name in {'last_updated', 'properties'} or
             'datum' in name.lower()
         )
+
+    @staticmethod
+    def _is_numeric_annotation(annotation) -> bool:
+        """Return True if *annotation* resolves to a numeric type.
+
+        Handles plain types (``float``, ``int``), numpy scalar types,
+        ``Optional[float]``,  ``Union[float, int]``, etc.
+        """
+        if annotation is typing.Any:
+            return False
+        origin = getattr(annotation, '__origin__', None)
+        if origin is typing.Union:
+            # e.g. Optional[float] == Union[float, None]
+            return any(
+                DunderMixin._is_numeric_annotation(arg)
+                for arg in annotation.__args__
+                if arg is not type(None)
+            )
+        try:
+            if isinstance(annotation, type) and issubclass(annotation, _NUMERIC_TYPES):
+                return True
+        except TypeError:
+            pass
+        return False
+
+    @classmethod
+    def _get_comparable_float_properties_from_class(cls) -> list[str]:
+        """Discover float-valued ``@property`` names by inspecting the class hierarchy.
+
+        Unlike the instance method ``_get_comparable_float_properties`` this
+        does **not** require a live object.  It walks the MRO, finds
+        ``property`` descriptors, applies the viewable-stat exclusion filter,
+        and then checks the ``fget`` return annotation.  If a property has a
+        numeric return annotation it is included; if it has *no* annotation
+        at all it is included as well (permissive fallback).  Properties
+        that are explicitly annotated as a non-numeric type are excluded.
+        """
+        seen: set[str] = set()
+        float_properties: list[str] = []
+        for klass in cls.__mro__:
+            for name, value in klass.__dict__.items():
+                if name in seen:
+                    continue
+                seen.add(name)
+                if not isinstance(value, property):
+                    continue
+                if DunderMixin._should_exclude_property_viewable_stat_static(name):
+                    continue
+
+                # --- check return annotation of property.fget ---
+                fget = value.fget
+                if fget is None:
+                    continue
+                try:
+                    hints = typing.get_type_hints(fget)
+                except Exception:
+                    hints = {}
+                ret = hints.get('return')
+                if ret is None:
+                    # No annotation → include (permissive fallback).
+                    float_properties.append(name)
+                elif DunderMixin._is_numeric_annotation(ret):
+                    float_properties.append(name)
+                # else: explicitly non-numeric → skip
+        return float_properties
 
     def _is_plotly_trace(self, obj):
         """Check if object is a Plotly trace object."""
