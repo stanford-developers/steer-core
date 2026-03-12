@@ -338,10 +338,12 @@ class SerializerMixin:
             If the object name is not found in any of the tables.
         """
         from steer_core.Data import is_development
-        if is_development():
+        _dev_mode = is_development()
+        if _dev_mode:
             from steer_opencell_data.DataManager import DataManager
         else:
             from steer_core.Data.DataManager import DataManager
+            from steer_core.Data.DataManager import NotFoundError
 
         database = DataManager()
         
@@ -349,7 +351,6 @@ class SerializerMixin:
         if table_name:
             tables_to_search = [table_name]
         else:
-            # Only check for _table_name if table_name wasn't provided
             if not hasattr(cls, '_table_name'):
                 raise NotImplementedError(
                     f"{cls.__name__} must define a '_table_name' class variable "
@@ -361,16 +362,25 @@ class SerializerMixin:
             else:
                 tables_to_search = [cls._table_name]
         
-        # Try each table until found
+        # In production mode, attempt get_data directly (single HTTP call)
+        # instead of listing all names first.  In development mode (SQLite)
+        # we keep the list-then-fetch approach since it has no network cost.
         for table in tables_to_search:
-            available_materials = database.get_unique_values(table, "name")
-            
-            if name in available_materials:
+            if _dev_mode:
+                available = database.get_unique_values(table, "name")
+                if name not in available:
+                    continue
                 data = database.get_data(table, condition=f"name = '{name}'")
-                serialized_bytes = data["object"].iloc[0]
-                return cls.deserialize(serialized_bytes)
+            else:
+                try:
+                    data = database.get_data(table, condition=f"name = '{name}'")
+                except NotFoundError:
+                    continue
+
+            serialized_bytes = data["object"].iloc[0]
+            return cls.deserialize(serialized_bytes)
         
-        # Not found in any table
+        # Not found — build a helpful error message
         all_available = []
         for table in tables_to_search:
             all_available.extend(database.get_unique_values(table, "name"))

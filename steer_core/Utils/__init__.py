@@ -5,6 +5,15 @@ from typing import Any
 import numpy as np
 
 
+def is_plotly_trace(obj: object) -> bool:
+    """Return ``True`` if *obj* is a Plotly trace object."""
+    return (
+        hasattr(obj, '__module__')
+        and obj.__module__
+        and obj.__module__.startswith('plotly.graph_objs')
+    )
+
+
 def round_dict_recursive(
     obj: Any, precision: int = 2, unit_conversion: float = 1.0
 ) -> Any:

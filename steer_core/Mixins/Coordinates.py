@@ -10,6 +10,12 @@ class CoordinateMixin:
     A class to manage and manipulate 3D coordinates.
     Provides methods for rotation, area calculation, and coordinate ordering.
     """
+
+    _PLANE_MAPPING = {
+        'xy': (0, 1),
+        'xz': (0, 2),
+        'yz': (1, 2),
+    }
     @staticmethod
     def get_radius_of_points(coords: np.ndarray) -> Tuple[float, Tuple[float, float]]:
         """Calculate the radius of a spiral given its coordinates.
@@ -390,15 +396,8 @@ class CoordinateMixin:
         if coords.shape[0] < 2:
             return coords.copy()
         
-        # Map plane string to column indices
-        plane_mapping = {
-            'xy': (0, 1),  # x, y columns
-            'xz': (0, 2),  # x, z columns  
-            'yz': (1, 2)   # y, z columns
-        }
-        
-        if plane not in plane_mapping:
-            raise ValueError(f"plane must be one of {list(plane_mapping.keys())}, got '{plane}'")
+        if plane not in CoordinateMixin._PLANE_MAPPING:
+            raise ValueError(f"plane must be one of {list(CoordinateMixin._PLANE_MAPPING.keys())}, got '{plane}'")
         
         # Check if we have NaN rows (multiple coordinate blocks)
         x_coords = coords[:, 0]
@@ -482,13 +481,7 @@ class CoordinateMixin:
         np.ndarray
             Sorted coordinates array
         """
-        plane_mapping = {
-            'xy': (0, 1),  # x, y columns
-            'xz': (0, 2),  # x, z columns  
-            'yz': (1, 2)   # y, z columns
-        }
-        
-        axis_1_idx, axis_2_idx = plane_mapping[plane]
+        axis_1_idx, axis_2_idx = CoordinateMixin._PLANE_MAPPING[plane]
         
         # Extract the relevant coordinates for the specified plane
         axis_1_coords = coords[:, axis_1_idx]
@@ -952,26 +945,26 @@ class CoordinateMixin:
         average_gap = np.mean(np.abs(gaps))
         tolerance = average_gap * tolerance_multiplier
         
-        # Find positions where gaps exceed tolerance in original array
-        result_rows = []
-        
-        for i in range(len(data)):
-            result_rows.append(data[i])
-            
-            # Check if we should insert a gap after this row
-            if i < len(data) - 1:
-                current_val = column_values[i]
-                next_val = column_values[i + 1]
-                
-                # Only check gap if both values are not NaN
-                if not (np.isnan(current_val) or np.isnan(next_val)):
-                    gap = abs(next_val - current_val)
-                    if gap > tolerance:
-                        # Insert a row of NaNs
-                        nan_row = np.full(data.shape[1], np.nan)
-                        result_rows.append(nan_row)
-        
-        return np.array(result_rows)
+        # Vectorised: identify consecutive-row pairs where both values are
+        # non-NaN and the gap exceeds the tolerance.
+        cur = column_values[:-1]
+        nxt = column_values[1:]
+        both_valid = ~(np.isnan(cur) | np.isnan(nxt))
+        exceeds = both_valid & (np.abs(nxt - cur) > tolerance)
+
+        insert_indices = np.where(exceeds)[0] + 1  # positions *after* which to insert
+        if insert_indices.size == 0:
+            return data.copy()
+
+        nan_row = np.full((1, data.shape[1]), np.nan)
+        parts = []
+        prev = 0
+        for idx in insert_indices:
+            parts.append(data[prev:idx])
+            parts.append(nan_row)
+            prev = idx
+        parts.append(data[prev:])
+        return np.vstack(parts)
 
     @staticmethod
     def remove_skip_coat_area(

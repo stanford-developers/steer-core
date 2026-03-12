@@ -1,8 +1,12 @@
-import plotly.graph_objects as go
-import plotly.express as px
+from __future__ import annotations
+
+from typing import Any, Callable
+
 import pandas as pd
-from typing import Dict, Any, Tuple, List, Union, Optional
-from collections import OrderedDict
+import plotly.express as px
+import plotly.graph_objects as go
+
+from steer_core.Mixins.Colors import ColorMixin
 from steer_core.Mixins.Coordinates import CoordinateMixin
 
 
@@ -57,18 +61,18 @@ class PlotterMixin:
         x=0.5,
     )
 
-    # ── Colour utilities ──────────────────────────────────────────────
+    # ── Colour utilities (partially delegated to ColorMixin) ────────────
 
     @staticmethod
-    def hex_to_rgb(hex_color: str) -> Tuple[int, int, int]:
+    def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
         """Convert a hex colour string (e.g. ``'#4C78A8'``) to an ``(R, G, B)`` tuple."""
         hex_color = hex_color.lstrip("#")
         return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
     @staticmethod
-    def rgb_to_hex(rgb: Tuple[int, int, int]) -> str:
+    def rgb_to_hex(rgb: tuple[int, int, int]) -> str:
         """Convert an ``(R, G, B)`` tuple to a hex colour string."""
-        return "#{:02x}{:02x}{:02x}".format(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+        return ColorMixin.rgb_tuple_to_hex(rgb)
 
     @staticmethod
     def lighten_color(hex_color: str, factor: float) -> str:
@@ -82,23 +86,22 @@ class PlotterMixin:
             Blend factor — ``0`` returns the original colour, ``1`` returns white.
         """
         r, g, b = PlotterMixin.hex_to_rgb(hex_color)
-        r = r + (255 - r) * factor
-        g = g + (255 - g) * factor
-        b = b + (255 - b) * factor
-        return PlotterMixin.rgb_to_hex((r, g, b))
+        r = int(r + (255 - r) * factor)
+        g = int(g + (255 - g) * factor)
+        b = int(b + (255 - b) * factor)
+        return ColorMixin.rgb_tuple_to_hex((r, g, b))
 
     @staticmethod
     def hex_to_rgba(hex_color: str, alpha: float = 1.0) -> str:
         """Convert a hex colour string to an ``rgba()`` CSS string."""
-        r, g, b = PlotterMixin.hex_to_rgb(hex_color)
-        return f"rgba({r},{g},{b},{alpha})"
+        return ColorMixin._hex_to_rgba(hex_color, alpha)
 
     # ── Internal helpers ──────────────────────────────────────────────
 
     @staticmethod
     def _apply_layout_defaults(
         fig: go.Figure,
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Apply an optional dictionary of layout overrides to *fig*."""
         if layout_defaults and fig is not None and hasattr(fig, "update_layout"):
@@ -109,15 +112,15 @@ class PlotterMixin:
 
     @staticmethod
     def create_component_trace(
-            components, 
-            coord_attr, 
-            name, 
-            line_width, 
-            color_func, 
-            unit_conversion_factor,
-            order_clockwise: str = None,
-            gl: bool = False
-            ):
+            components: list | object,
+            coord_attr: str,
+            name: str,
+            line_width: float,
+            color_func: Callable,
+            unit_conversion_factor: float,
+            order_clockwise: str | None = None,
+            gl: bool = False,
+            ) -> go.Scatter | go.Scattergl | None:
         """
         Create a single trace for a component or group of components with NaN separators.
         
@@ -203,11 +206,11 @@ class PlotterMixin:
 
     @staticmethod
     def plot_breakdown_sunburst(
-        breakdown_dict: Dict[str, Any],
+        breakdown_dict: dict[str, Any],
         title: str = "Breakdown",
         root_label: str = "Total",
         unit: str = "",
-        colorway: List[str] = None,
+        colorway: list[str] = None,
         **kwargs,
     ) -> go.Figure:
         """
@@ -215,7 +218,7 @@ class PlotterMixin:
 
         Parameters
         ----------
-        breakdown_dict : Dict[str, Any]
+        breakdown_dict : dict[str, Any]
             Nested dictionary where values can be either numbers or nested dictionaries.
             Each nesting level becomes a ring in the sunburst plot.
         title : str, optional
@@ -224,7 +227,7 @@ class PlotterMixin:
             Label for the root node. Defaults to "Total".
         unit : str, optional
             Unit string to display in hover text (e.g., "g", "kg", "%"). Defaults to "".
-        colorway : List[str], optional
+        colorway : list[str], optional
             List of colors to use for the inner ring. If None, uses Plotly's default colorway.
             Defaults to None.
 
@@ -241,7 +244,7 @@ class PlotterMixin:
                 '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'
             ]
 
-        def _flatten_breakdown_values(data: Dict[str, Any]) -> List[float]:
+        def _flatten_breakdown_values(data: dict[str, Any]) -> list[float]:
             """Recursively flatten all numeric values from nested breakdown dictionary"""
             values = []
             for value in data.values():
@@ -251,7 +254,7 @@ class PlotterMixin:
                     values.append(float(value))
             return values
 
-        def _calculate_subtotal(data: Dict[str, Any]) -> float:
+        def _calculate_subtotal(data: dict[str, Any]) -> float:
             """Calculate the total value for a dictionary (sum of all nested numeric values)"""
             total = 0.0
             for value in data.values():
@@ -262,8 +265,8 @@ class PlotterMixin:
             return total
 
         def _prepare_sunburst_data(
-            data: Dict[str, Any], parent_id: str = "", current_path: str = "", depth: int = 1
-        ) -> Tuple[List[str], List[str], List[str], List[float], List[int]]:
+            data: dict[str, Any], parent_id: str = "", current_path: str = "", depth: int = 1
+        ) -> tuple[list[str], list[str], list[str], list[float], list[int]]:
             """Recursively prepare data for sunburst plot with proper hierarchy"""
             ids = []
             labels = []
@@ -413,12 +416,12 @@ class PlotterMixin:
         x: str,
         y: str,
         hover_name: str = None,
-        custom_data: Optional[List[str]] = None,
-        color: Optional[str] = None,
-        size: Optional[str] = None,
+        custom_data: list[str] | None = None,
+        color: str | None = None,
+        size: str | None = None,
         size_max: int = 30,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
         **kwargs,
     ) -> go.Figure:
         """Create a styled 2-D scatter plot.
@@ -472,9 +475,9 @@ class PlotterMixin:
         x_label: str = "X",
         y_label: str = "Y",
         group_label: str = "Group",
-        palette: Optional[List[str]] = None,
+        palette: list[str] | None = None,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Create a scatter plot of group means with std dev error bars.
 
@@ -542,12 +545,12 @@ class PlotterMixin:
         y: str,
         z: str,
         hover_name: str = None,
-        custom_data: Optional[List[str]] = None,
-        color: Optional[str] = None,
-        size: Optional[str] = None,
+        custom_data: list[str] | None = None,
+        color: str | None = None,
+        size: str | None = None,
         size_max: int = 30,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
         **kwargs,
     ) -> go.Figure:
         """Create a styled 3-D scatter plot.
@@ -610,9 +613,9 @@ class PlotterMixin:
         y_label: str = "Y",
         z_label: str = "Z",
         group_label: str = "Group",
-        palette: Optional[List[str]] = None,
+        palette: list[str] | None = None,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Create a 3-D scatter plot of group means with std dev error bars.
 
@@ -690,7 +693,7 @@ class PlotterMixin:
         x_label: str = "X",
         y_label: str = "Y",
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
         **kwargs,
     ) -> go.Figure:
         """Create a styled bar chart.
@@ -729,9 +732,9 @@ class PlotterMixin:
         values,
         y_label: str = "Y",
         group_label: str = "Group",
-        palette: Optional[List[str]] = None,
+        palette: list[str] | None = None,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Create a bar chart showing mean +/- std dev per group.
 
@@ -790,7 +793,7 @@ class PlotterMixin:
         x,
         x_label: str = "Value",
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
         **kwargs,
     ) -> go.Figure:
         """Create a styled histogram.
@@ -824,9 +827,9 @@ class PlotterMixin:
         groups,
         values,
         x_label: str = "Value",
-        palette: Optional[List[str]] = None,
+        palette: list[str] | None = None,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Create overlaid histograms, one per group.
 
@@ -873,9 +876,9 @@ class PlotterMixin:
     def plot_pdf(
         values,
         label: str = "Value",
-        color_groups: Optional[Dict[str, List[float]]] = None,
+        color_groups: dict[str, list[float]] | None = None,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Create a probability-density histogram (one trace per colour group).
 
@@ -928,9 +931,9 @@ class PlotterMixin:
         groups,
         values,
         label: str = "Value",
-        palette: Optional[List[str]] = None,
+        palette: list[str] | None = None,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Create overlaid probability-density histograms, one per group.
 
@@ -982,7 +985,7 @@ class PlotterMixin:
         y_label: str = "Y",
         points: str = "all",
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
         **kwargs,
     ) -> go.Figure:
         """Create a styled box plot.
@@ -1032,7 +1035,7 @@ class PlotterMixin:
         points: str = "all",
         box: bool = True,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
         **kwargs,
     ) -> go.Figure:
         """Create a styled violin plot.
@@ -1084,7 +1087,7 @@ class PlotterMixin:
         custom_data=None,
         y_label: str = "Y",
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
         **kwargs,
     ) -> go.Figure:
         """Create a styled strip (jitter) plot.
@@ -1131,13 +1134,13 @@ class PlotterMixin:
     @staticmethod
     def plot_radar(
         df: pd.DataFrame,
-        axis_labels: List[str],
-        inverted: Optional[Dict[str, bool]] = None,
-        color_column: Optional[str] = None,
+        axis_labels: list[str],
+        inverted: dict[str, bool] | None = None,
+        color_column: str | None = None,
         name_column: str = "name",
-        palette: Optional[List[str]] = None,
+        palette: list[str] | None = None,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Create a normalised radar (spider) chart.
 
@@ -1178,7 +1181,7 @@ class PlotterMixin:
 
         # ── Normalise each axis to 0–1 with padding ──────────────────
         df = df.copy()
-        axis_ranges: Dict[str, Tuple[float, float]] = {}
+        axis_ranges: dict[str, tuple[float, float]] = {}
         for col in axis_labels:
             col_min = df[col].min()
             col_max = df[col].max()
@@ -1325,12 +1328,12 @@ class PlotterMixin:
     @staticmethod
     def plot_grouped_radar(
         df: pd.DataFrame,
-        axis_labels: List[str],
+        axis_labels: list[str],
         group_column: str,
-        inverted: Optional[Dict[str, bool]] = None,
-        palette: Optional[List[str]] = None,
+        inverted: dict[str, bool] | None = None,
+        palette: list[str] | None = None,
         template: str = "presentation",
-        layout_defaults: Optional[Dict[str, Any]] = None,
+        layout_defaults: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Create a normalised radar chart showing group means with std dev bands.
 
@@ -1365,7 +1368,7 @@ class PlotterMixin:
             inverted = {col: "cost" in col.lower() for col in axis_labels}
 
         grouped = df.groupby(group_column)
-        group_stats: Dict[str, dict] = {}
+        group_stats: dict[str, dict] = {}
         for grp_name, grp_df in sorted(grouped, key=lambda x: str(x[0])):
             means = {col: grp_df[col].mean() for col in axis_labels}
             stds = {
@@ -1379,7 +1382,7 @@ class PlotterMixin:
         all_means = pd.DataFrame([s["mean"] for s in group_stats.values()])
         all_stds = pd.DataFrame([s["std"] for s in group_stats.values()])
 
-        axis_ranges: Dict[str, Tuple[float, float]] = {}
+        axis_ranges: dict[str, tuple[float, float]] = {}
         for col in axis_labels:
             low = (all_means[col] - all_stds[col]).min()
             high = (all_means[col] + all_stds[col]).max()

@@ -4,6 +4,8 @@ import typing
 
 import numpy as np
 
+from steer_core.Utils import is_plotly_trace
+
 # Numeric types accepted by the float-property class-level introspection.
 _NUMERIC_TYPES = (float, int, np.floating, np.integer)
 
@@ -23,7 +25,7 @@ class DunderMixin:
                             prop_value = getattr(self, name)
                             if isinstance(prop_value, (float, np.floating, int, np.integer)):
                                 float_properties.append(name)
-                        except Exception:
+                        except (AttributeError, TypeError):
                             continue  # Skip properties that raise exceptions
         return float_properties
 
@@ -120,7 +122,7 @@ class DunderMixin:
                     continue
                 try:
                     hints = typing.get_type_hints(fget)
-                except Exception:
+                except (AttributeError, TypeError, NameError):
                     hints = {}
                 ret = hints.get('return')
                 if ret is None:
@@ -131,13 +133,10 @@ class DunderMixin:
                 # else: explicitly non-numeric → skip
         return float_properties
 
-    def _is_plotly_trace(self, obj):
+    @staticmethod
+    def _is_plotly_trace(obj):
         """Check if object is a Plotly trace object."""
-        return (
-            hasattr(obj, '__module__') and 
-            obj.__module__ and 
-            obj.__module__.startswith('plotly.graph_objs')
-        )
+        return is_plotly_trace(obj)
 
     def _compare_none_values(self, self_value, other_value):
         """Compare None values. Returns (should_continue, result)."""
@@ -172,16 +171,17 @@ class DunderMixin:
     def _compare_dictionaries(self, self_value, other_value):
         """Compare dictionaries by comparing keys and values separately. Returns (should_continue, result)."""
         if isinstance(self_value, dict) and isinstance(other_value, dict):
-            # Compare keys first (order-independent)
-            if list(self_value.keys()) == list(other_value.keys()) and list(self_value.values()) == list(other_value.values()):
-                return False, True  # Quick path: both keys and values match in order
-            
-            # Compare values for each key
-            for key in self_value.keys():
-                if self_value[key] != other_value[key]:
+            if len(self_value) != len(other_value):
+                return False, False
+
+            # Compare ordered key-value pairs using __eq__ (not hash-based)
+            # so that objects with identity-based __hash__ still compare
+            # correctly when they are value-equal.
+            for (k1, v1), (k2, v2) in zip(self_value.items(), other_value.items()):
+                if k1 != k2 or v1 != v2:
                     return False, False
-            
-            return False, True  # Dictionaries are equal
+
+            return False, True
         elif isinstance(self_value, dict) or isinstance(other_value, dict):
             return False, False  # One is dict, other is not
         return True, None  # Continue, not dictionaries
@@ -243,18 +243,19 @@ class DunderMixin:
                             return False
                         break  # Values are equal, continue to next property
                         
-            except (AttributeError, Exception):
-                # If property doesn't exist or comparison fails
+            except (AttributeError, TypeError):
                 return False
         
         return True
     
     def __hash__(self):
-        """
-        Simple, robust hash based on object identity.
-        
-        Uses id() for a fast, guaranteed-unique hash that won't fail.
-        Objects are only equal if they're the same instance.
+        """Hash based on object identity.
+
+        Because the objects using this mixin are mutable, a content-based
+        hash would be unstable.  Using ``id()`` means that two distinct
+        objects that compare equal via ``__eq__`` will have different
+        hashes -- avoid using these objects as ``set`` members or ``dict``
+        keys when value-based identity matters.
         """
         return hash(id(self))
     

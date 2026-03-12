@@ -1,15 +1,16 @@
+from __future__ import annotations
+
 import logging
 import os
 import re
 import time
 import urllib.parse
 from pathlib import Path
-from typing import Optional, Union
 
 import pandas as pd
 import requests
 
-from steer_core.Constants.Units import *
+from steer_core.Constants.Units import H_TO_S, mA_TO_A, G_TO_KG
 
 logger = logging.getLogger("steer_core.DataManager")
 logger.setLevel(logging.DEBUG)
@@ -71,9 +72,9 @@ class DataManager:
     All existing ``from_database()`` call sites work without changes.
     """
 
-    _token: Optional[str] = None  # class-level JWT token
+    _token: str | None = None
 
-    def __init__(self, jwt_token: Optional[str] = None):
+    def __init__(self, jwt_token: str | None = None):
         self._api_url = os.environ.get("API_URL")
         if not self._api_url:
             raise DataManagerError(
@@ -101,7 +102,7 @@ class DataManager:
     # -- Token management --------------------------------------------------
 
     @classmethod
-    def set_token(cls, token: Optional[str]) -> None:
+    def set_token(cls, token: str | None) -> None:
         """Set the JWT token used for authenticated API requests."""
         cls._token = token
 
@@ -159,21 +160,21 @@ class DataManager:
             msg = "Forbidden"
             try:
                 msg = resp.json().get("error", msg)
-            except Exception:
+            except (ValueError, KeyError):
                 pass
             raise ForbiddenError(msg)
         if resp.status_code == 404:
             msg = "Not found"
             try:
                 msg = resp.json().get("error", msg)
-            except Exception:
+            except (ValueError, KeyError):
                 pass
             raise NotFoundError(msg)
         if resp.status_code == 409:
             msg = "Conflict"
             try:
                 msg = resp.json().get("error", msg)
-            except Exception:
+            except (ValueError, KeyError):
                 pass
             raise ConflictError(msg)
         if resp.status_code >= 400:
@@ -198,9 +199,9 @@ class DataManager:
     def get_data(
         self,
         table_name: str,
-        columns: Optional[list[str]] = None,
-        condition: Optional[Union[str, list[str]]] = None,
-        latest_column: Optional[str] = None,
+        columns: list[str] | None = None,
+        condition: str | list[str] | None = None,
+        latest_column: str | None = None,
     ) -> pd.DataFrame:
         """Retrieve data from the API.
 
@@ -240,9 +241,9 @@ class DataManager:
         self,
         table_name: str,
         resource_type: str,
-        columns: Optional[list[str]],
-        condition: Union[str, list[str]],
-        latest_column: Optional[str],
+        columns: list[str] | None,
+        condition: str | list[str],
+        latest_column: str | None,
         auth: bool,
     ) -> pd.DataFrame:
         """Handle ``get_data()`` when a condition is supplied."""
@@ -371,14 +372,16 @@ class DataManager:
         if data.empty:
             return
 
-        for _, row in data.iterrows():
+        columns = set(data.columns)
+        meta_cols = {"form_factor", "internal_construction", "chemistry", "version"}
+
+        for row in data.to_dict("records"):
             name = row["name"]
             encoded_name = self._encode(name)
 
-            # Build metadata body
             body: dict = {"update_object": True}
-            for col in ["form_factor", "internal_construction", "chemistry", "version"]:
-                if col in row.index and pd.notna(row[col]):
+            for col in meta_cols & columns:
+                if pd.notna(row[col]):
                     body[col] = row[col]
 
             resp = self._request(
@@ -388,9 +391,8 @@ class DataManager:
                 json=body,
             )
 
-            # Upload blob to presigned URL
             upload_url = resp.get("upload_url")
-            if upload_url and "object" in row.index and row["object"] is not None:
+            if upload_url and "object" in columns and row.get("object") is not None:
                 blob = row["object"]
                 if isinstance(blob, str):
                     blob = blob.encode("latin-1")
@@ -496,7 +498,7 @@ class DataManager:
     # -- Static utility (kept from SQLite DataManager) ---------------------
     # steer-opencell-data/steer_opencell_data/DataManager.py
     @staticmethod
-    def read_half_cell_curve(half_cell_path: Union[str, Path]) -> pd.DataFrame:
+    def read_half_cell_curve(half_cell_path: str | Path) -> pd.DataFrame:
         """Read a half-cell voltage curve from a local CSV file.
 
         Parameters
