@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 from typing import Type, Iterable
 from enum import Enum
 from datetime import datetime
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
 
-from steer_core.Constants.Format import *
+from steer_core.Constants.Format import DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT
+from steer_core.Utils import is_plotly_trace as _is_plotly_trace
 
 ALLOWED_REFERENCE = ["Na/Na+", "Li/Li+"]
 
@@ -13,27 +15,23 @@ ALLOWED_REFERENCE = ["Na/Na+", "Li/Li+"]
 class ValidationMixin:
 
     @staticmethod
-    def validate_plotly_trace(value: object, name: str) -> None:
+    def validate_plotly_trace(value: object, name: str) -> bool:
         """
-        Validate that a value is a Plotly trace object.
+        Check whether *value* is a Plotly trace object.
 
         Parameters
         ----------
         value : object
             The value to validate.
         name : str
-            The name of the parameter for error messages.
+            The name of the parameter (unused, kept for API compatibility).
 
-        Raises
-        ------
-        TypeError
-            If the value is not a Plotly trace object.
+        Returns
+        -------
+        bool
+            ``True`` if *value* is a Plotly trace, ``False`` otherwise.
         """
-        return (
-            hasattr(value, '__module__') and
-            value.__module__ and 
-            value.__module__.startswith('plotly.graph_objs')
-        )
+        return _is_plotly_trace(value)
         
     @staticmethod
     def validate_type(value, expected_type, name: str) -> None:
@@ -122,7 +120,7 @@ class ValidationMixin:
 
     @staticmethod
     def validate_pandas_dataframe(
-        df: pd.DataFrame, name: str, column_names: list = None
+        df: pd.DataFrame, name: str, column_names: list | None = None
     ) -> None:
         """
         Validate that the input is a pandas DataFrame.
@@ -188,7 +186,7 @@ class ValidationMixin:
         ValueError
             If the datum does not have exactly 3 coordinates.
         """
-        if type(datum) is not tuple and len(datum) != 3:
+        if not isinstance(datum, (tuple, list, np.ndarray)) or len(datum) != 3:
             raise ValueError("Datum must be a 3D point with exactly 3 coordinates.")
 
         if not all(isinstance(coord, (int, float)) for coord in datum):
@@ -211,9 +209,10 @@ class ValidationMixin:
         ValueError
             If the value is not a positive float.
         """
-        value = float(value)  # Ensure value is float
-        if not isinstance(value, (int, float)):
-            raise ValueError(f"{name} must be a positive float. Provided: {value} of type {type(value).__name__}.")
+        if not isinstance(value, (int, float, np.int64, np.float64)):
+            raise TypeError(f"{name} must be a number. Provided: {type(value).__name__}.")
+        if value < 0:
+            raise ValueError(f"{name} must be a positive float. Provided: {value}.")
 
     @staticmethod
     def validate_positive_int(value: int, name: str, strictly: bool = True) -> None:
@@ -440,14 +439,14 @@ class ValidationMixin:
 
         Examples
         --------
-        >>> ValidationMixin.validate_amount(42, 'amount')      # OK
-        >>> ValidationMixin.validate_amount(3.14, 'amount')    # OK
-        >>> ValidationMixin.validate_amount(True, 'amount')    # Raises TypeError
-        >>> ValidationMixin.validate_amount('100', 'amount')   # Raises TypeError
+        >>> ValidationMixin.validate_number(42, 'amount')      # OK
+        >>> ValidationMixin.validate_number(3.14, 'amount')    # OK
+        >>> ValidationMixin.validate_number(True, 'amount')    # Raises TypeError
+        >>> ValidationMixin.validate_number('100', 'amount')   # Raises TypeError
         """
         if isinstance(value, bool):
             raise TypeError(f"{name} must be a number (int or float), not bool.")
         
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, (int, float, np.int64)):
             raise TypeError(f"{name} must be a number (int or float). Provided: {type(value).__name__}.")
 

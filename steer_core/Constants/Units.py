@@ -31,7 +31,6 @@ SHORT_TON_TO_T = 1 / 1.10231
 LB_TO_SHORT_TON = 1 / 2000
 SHORT_TON_TO_LB = 2000
 LB_TO_T = 1 / 2000 * 1/1.10231
-MM_TO_UM = 1e3
 
 
 # Current units
@@ -80,6 +79,11 @@ GAL_TO_L = 3.78541
 L_TO_GAL = 1 / 3.78541
 MMGAL_TO_GAL = 1e-6
 GAL_TO_MMGAL = 1e6
+
+# Composite energy conversions
+ENERGY_CONVERSION_FACTOR = S_TO_H                               # J/s → Wh
+VOLUMETRIC_ENERGY_CONVERSION = S_TO_H / M_TO_DM**3              # J/m³ → Wh/L
+NORMALISED_COST_CONVERSION = 1 / (ENERGY_CONVERSION_FACTOR * W_TO_KW)  # → $/kWh
 
 
 

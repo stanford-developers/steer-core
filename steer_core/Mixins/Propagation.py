@@ -1,8 +1,9 @@
 """Mixin for update propagation through hierarchical object trees."""
 
-from typing import Optional, Any
+from typing import Optional, Any, Generator
 from functools import wraps
 from copy import deepcopy as do_deepcopy
+from contextlib import contextmanager
 
 
 def propagating_setter(attr_name: str = None, deepcopy: bool = False):
@@ -176,7 +177,38 @@ class PropagationMixin:
                 return
             if hasattr(self, '_calculate_all_properties'):
                 self._calculate_all_properties()
-    
+
+    @contextmanager
+    def batch_updates(self) -> Generator[None, None, None]:
+        """Context manager for efficient batch property updates.
+
+        Temporarily disables automatic recalculation during property changes,
+        then performs a single recalculation when exiting the context.
+
+        Use this when setting multiple properties at once to avoid redundant
+        recalculations that would otherwise occur after each property change.
+
+        Examples
+        --------
+        >>> with obj.batch_updates():
+        ...     obj.property_a = value_a
+        ...     obj.property_b = value_b
+        # Single recalculation happens here
+
+        Yields
+        ------
+        None
+        """
+        original_update_flag = getattr(self, '_update_properties', True)
+        self._update_properties = False
+
+        try:
+            yield
+        finally:
+            self._update_properties = original_update_flag
+            if original_update_flag and hasattr(self, '_calculate_all_properties'):
+                self._calculate_all_properties()
+
     def propagate_changes(self) -> None:
         """
         Propagate changes up to root by triggering parent setters.
