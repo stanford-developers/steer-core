@@ -102,7 +102,7 @@ known_first_party = ["steer_core"]
 minversion = "7.0"
 addopts = "-ra -q --strict-markers"
 testpaths = [
-    "tests",
+    "test",
 ]
 python_files = [
     "test_*.py",

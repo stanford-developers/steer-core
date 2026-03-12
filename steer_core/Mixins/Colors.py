@@ -1,9 +1,6 @@
 import numpy as np
 import plotly.colors as pc
 
-import pandas as pd
-import numpy as np
-
 
 class ColorMixin:
     """
@@ -12,11 +9,12 @@ class ColorMixin:
     """
 
     @staticmethod
-    def rgb_tuple_to_hex(rgb):
+    def rgb_tuple_to_hex(rgb: tuple[int, int, int]) -> str:
+        """Convert an ``(R, G, B)`` tuple to a hex colour string."""
         return "#{:02x}{:02x}{:02x}".format(*rgb)
 
     @staticmethod
-    def get_colorway(color1, color2, n):
+    def get_colorway(color1: str, color2: str, n: int) -> list[str]:
         """
         Generate a list of n hex colors interpolated between two HTML hex colors.
 
