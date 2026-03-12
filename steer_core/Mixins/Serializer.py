@@ -98,6 +98,14 @@ class SerializerMixin:
         if value_type is datetime:
             return {'__datetime__': value.isoformat()}
         
+        # Pandas DataFrame handling (lazy import to avoid hard dependency)
+        try:
+            import pandas as pd
+            if isinstance(value, pd.DataFrame):
+                return self._serialize_dataframe(value)
+        except ImportError:
+            pass
+
         # Enum handling
         if isinstance(value, Enum):
             return {
@@ -124,6 +132,38 @@ class SerializerMixin:
         # Fallback for other types (numpy arrays handled by msgpack_numpy)
         return value
     
+    def _serialize_dataframe(self, df) -> dict:
+        """
+        Serialize a pandas DataFrame to a dictionary representation.
+        Stores columns as numpy arrays to leverage msgpack_numpy for
+        efficient dtype-preserving serialization.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The DataFrame to serialize.
+
+        Returns
+        -------
+        dict
+            Dictionary with '__dataframe__' marker and column/index data.
+        """
+        result = {
+            '__dataframe__': True,
+            'columns': list(df.columns),
+            'data': {col: df[col].to_numpy() for col in df.columns},
+            'index_values': df.index.to_numpy(),
+            'index_name': df.index.name,
+        }
+        # Preserve MultiIndex if present
+        import pandas as pd
+        if isinstance(df.index, pd.MultiIndex):
+            result['__multiindex__'] = True
+            result['index_values'] = [level.tolist() for level in df.index.levels]
+            result['index_codes'] = [codes.tolist() for codes in df.index.codes]
+            result['index_names'] = list(df.index.names)
+        return result
+
     def _serialize_dict(self, d: dict) -> dict:
         """
         Serialize dictionary in single pass, detecting object keys/values during iteration.
@@ -262,6 +302,27 @@ class SerializerMixin:
             elif '__tuple__' in value:
                 # Recursively reconstruct tuple items
                 return tuple(cls._deserialize_value(item) for item in value['items'])
+            elif '__dataframe__' in value:
+                import pandas as pd
+                if value.get('__multiindex__'):
+                    index = pd.MultiIndex.from_arrays(
+                        [np.array(lvl) for lvl in value['index_values']],
+                        names=value.get('index_names'),
+                    )
+                    # Reconstruct using codes if needed for proper ordering
+                    if 'index_codes' in value:
+                        index = pd.MultiIndex(
+                            levels=[np.array(lvl) for lvl in value['index_values']],
+                            codes=value['index_codes'],
+                            names=value.get('index_names'),
+                        )
+                else:
+                    index = pd.Index(
+                        np.array(value['index_values']),
+                        name=value.get('index_name'),
+                    )
+                data = {col: np.array(arr) for col, arr in value['data'].items()}
+                return pd.DataFrame(data, index=index, columns=value['columns'])
             elif '__object_dict__' in value:
                 # Reconstruct dictionary with object keys or values
                 return {
