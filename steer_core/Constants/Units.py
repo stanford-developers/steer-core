@@ -31,7 +31,6 @@ SHORT_TON_TO_T = 1 / 1.10231
 LB_TO_SHORT_TON = 1 / 2000
 SHORT_TON_TO_LB = 2000
 LB_TO_T = 1 / 2000 * 1/1.10231
-MM_TO_UM = 1e3
 
 
 # Current units
