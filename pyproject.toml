@@ -41,9 +41,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nicholas9182/steer-core/"
-Repository = "https://github.com/nicholas9182/steer-core/"
-Issues = "https://github.com/nicholas9182/steer-core/issues"
+Homepage = "https://github.com/stanford-developers/steer-core/"
+Repository = "https://github.com/stanford-developers/steer-core/"
+Issues = "https://github.com/stanford-developers/steer-core/issues"
 Documentation = "https://steer-core.readthedocs.io/"
 
 [project.optional-dependencies]
