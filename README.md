@@ -1,7 +1,6 @@
 # steer-core
 
-[![Tests](https://github.com/nicholas9182/steer-core/actions/workflows/tests.yml/badge.svg)](https://github.com/nicholas9182/steer-core/actions/workflows/tests.yml)
-[![Lint](https://github.com/nicholas9182/steer-core/actions/workflows/lint.yml/badge.svg)](https://github.com/nicholas9182/steer-core/actions/workflows/lint.yml)
+[![Tests](https://github.com/stanford-developers/steer-core/actions/workflows/tests.yml/badge.svg)](https://github.com/stanford-developers/steer-core/actions/workflows/tests.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![Documentation](https://readthedocs.org/projects/steer-core/badge/?version=latest)](https://steer-core.readthedocs.io/)
@@ -126,4 +125,10 @@ If you use this software, please cite it using the metadata in [CITATION.cff](CI
 
 ## License
 
-This project is licensed under the AGPL-3.0-only license. See [LICENSE](LICENSE) for details.
+steer-core is dual-licensed:
+
+- **AGPL-3.0-only** — free for open-source use. See [LICENSE](LICENSE) for the full text.
+- **Proprietary license** — available for commercial or closed-source use. Contact
+  [nsiemons@stanford.edu](mailto:nsiemons@stanford.edu) for licensing inquiries.
+
+Contributions require signing a [Contributor License Agreement](CLA.md).

@@ -76,6 +76,25 @@ Open an issue on GitHub describing:
 - How it would benefit steer-core users
 - Any proposed implementation approach
 
+## Contributor License Agreement (CLA)
+
+steer-core is distributed under a **dual license** (AGPL-3.0 + proprietary). To ensure
+all contributions can be distributed under both licenses, we require contributors to sign
+a **Contributor License Agreement** before their first pull request can be merged.
+
+### How it works
+
+1. Submit your pull request
+2. The CLA Assistant bot will comment with a link to the [CLA](CLA.md)
+3. Read the CLA and post a comment in the PR stating:
+   > I have read the CLA Document and I hereby sign the CLA
+4. Your signature is recorded automatically — you only need to sign once
+
+The CLA assigns copyright of your contributions to the Project Owner (Nicholas Siemons)
+and grants you back a perpetual, non-exclusive license to your own contributions. This
+is necessary to allow distribution under both the open-source (AGPL-3.0) and proprietary
+licenses. For full details, see [CLA.md](CLA.md).
+
 ## Code of Conduct
 
 This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
@@ -83,5 +102,10 @@ By participating, you are expected to uphold this code.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the
-AGPL-3.0-only license.
+steer-core is dual-licensed:
+
+- **AGPL-3.0-only** — for open-source use. See [LICENSE](LICENSE).
+- **Proprietary license** — available for commercial use. Contact nsiemons@stanford.edu.
+
+By contributing, you agree to the terms of the [Contributor License Agreement](CLA.md),
+which assigns copyright to the Project Owner and enables dual licensing.
