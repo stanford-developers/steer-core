@@ -1,7 +1,6 @@
 # steer-core
 
 [![Tests](https://github.com/stanford-developers/steer-core/actions/workflows/tests.yml/badge.svg)](https://github.com/stanford-developers/steer-core/actions/workflows/tests.yml)
-[![Lint](https://github.com/stanford-developers/steer-core/actions/workflows/lint.yml/badge.svg)](https://github.com/stanford-developers/steer-core/actions/workflows/lint.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![Documentation](https://readthedocs.org/projects/steer-core/badge/?version=latest)](https://steer-core.readthedocs.io/)
