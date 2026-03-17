@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Modelling energy storage from cell to site - STEER OpenCell Design"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "CC-BY-NC-SA-4.0"}
+license = "AGPL-3.0-only"
 authors = [
     {name = "Nicholas Siemons", email = "nsiemons@stanford.edu"},
 ]
@@ -22,7 +22,6 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
@@ -45,7 +44,7 @@ dependencies = [
 Homepage = "https://github.com/nicholas9182/steer-core/"
 Repository = "https://github.com/nicholas9182/steer-core/"
 Issues = "https://github.com/nicholas9182/steer-core/issues"
-Documentation = "https://github.com/nicholas9182/steer-core/"
+Documentation = "https://steer-core.readthedocs.io/"
 
 [project.optional-dependencies]
 dev = [
@@ -59,6 +58,12 @@ dev = [
 test = [
     "pytest>=7.0",
     "pytest-cov",
+]
+docs = [
+    "sphinx>=7.0",
+    "furo",
+    "sphinx-autodoc-typehints",
+    "myst-parser",
 ]
 
 [tool.setuptools]
@@ -107,4 +112,15 @@ testpaths = [
 python_files = [
     "test_*.py",
     "*_test.py",
+]
+
+[tool.coverage.run]
+source = ["steer_core"]
+omit = ["*/test/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "raise NotImplementedError",
 ]
