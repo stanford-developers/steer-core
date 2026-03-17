@@ -195,7 +195,9 @@ class DataManager:
 
     @staticmethod
     def _encode(name: str) -> str:
-        return urllib.parse.quote(name, safe="")
+        # Double-encode: API Gateway decodes path parameters once automatically
+        single = urllib.parse.quote(name, safe="")
+        return urllib.parse.quote(single, safe="")
 
     # -- Read operations ---------------------------------------------------
 
