@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 ## Unit conversions
 # Length units
 KG_TO_G = 1e3

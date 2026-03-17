@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Mixin for update propagation through hierarchical object trees."""
 
 from typing import Optional, Any, Generator

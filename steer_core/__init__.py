@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 __version__ = "0.2.11"
 
 from .Mixins.Colors import ColorMixin

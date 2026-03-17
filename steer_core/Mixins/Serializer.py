@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 import importlib
 import msgpack
 import msgpack_numpy as m
