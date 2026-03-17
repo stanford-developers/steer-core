@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "steer-core"
+type: software
+authors:
+  - family-names: Siemons
+    given-names: Nicholas
+    email: nsiemons@stanford.edu
+    affiliation: Stanford University
+version: "0.2.11"
+date-released: "2026-03-17"
+license: AGPL-3.0-only
+repository-code: "https://github.com/nicholas9182/steer-core"
+keywords:
+  - energy
+  - storage
+  - battery
+  - modeling
+  - simulation
