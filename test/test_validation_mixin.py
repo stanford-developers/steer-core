@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import unittest
 import plotly.graph_objects as go
 from steer_core.Mixins.TypeChecker import ValidationMixin
