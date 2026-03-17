@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 import unittest
 import plotly.graph_objects as go
 from steer_core.Mixins.TypeChecker import ValidationMixin

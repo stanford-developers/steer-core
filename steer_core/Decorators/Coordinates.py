@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 from steer_core.Decorators.General import recalculate
 
 calculate_coordinates = recalculate("coordinates")

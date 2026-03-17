@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Utility functions for the steer-core package."""
 
 from typing import Any

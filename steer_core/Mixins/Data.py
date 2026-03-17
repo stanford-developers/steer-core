@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 from copy import deepcopy
 import numpy as np
 from scipy.interpolate import PchipInterpolator

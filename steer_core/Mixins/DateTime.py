@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # steer_core/Mixins/DateTime.py
 """
 steer_core/Mixins/DateTime.py
