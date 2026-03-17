@@ -9,3 +9,8 @@ local_data/
 Archive/
 .vscode*
 app_builds/
+docs/_build/
+.coverage
+coverage.xml
+htmlcov/
+*.pyc

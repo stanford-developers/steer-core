@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 ## Constants
 PI = 3.14159265358979323846
 TWO_PI = 2.0 * PI

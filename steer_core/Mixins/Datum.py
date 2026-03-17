@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Mixin providing standard datum property interface with mm/m unit conversion."""
 
 from typing import Tuple
