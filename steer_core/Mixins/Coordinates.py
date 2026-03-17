@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import numpy as np
 import pandas as pd
 from typing import Tuple

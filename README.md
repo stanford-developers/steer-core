@@ -1,5 +1,11 @@
 # steer-core
 
+[![Tests](https://github.com/nicholas9182/steer-core/actions/workflows/tests.yml/badge.svg)](https://github.com/nicholas9182/steer-core/actions/workflows/tests.yml)
+[![Lint](https://github.com/nicholas9182/steer-core/actions/workflows/lint.yml/badge.svg)](https://github.com/nicholas9182/steer-core/actions/workflows/lint.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Documentation](https://readthedocs.org/projects/steer-core/badge/?version=latest)](https://steer-core.readthedocs.io/)
+
 Base utilities for the OpenCell platform: constants, mixins (Serializer, Validation, Plotter), decorators, and the DataManager REST API client.
 
 ## Install
@@ -81,3 +87,43 @@ API calls and S3 downloads are logged to the `steer_core.DataManager` logger:
 [steer_core.DataManager] [API] GET /materials/tape_materials/Kapton -> 200 (164 ms)
 [steer_core.DataManager] [S3] Downloaded 0.2 KB in 499 ms
 ```
+
+## Quick Start
+
+```python
+from steer_core import ValidationMixin, SerializerMixin, DunderMixin
+
+class MyComponent(ValidationMixin, SerializerMixin, DunderMixin):
+    def __init__(self, name: str, mass: float):
+        self._name = name
+        self._mass = mass
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def mass(self) -> float:
+        return self._mass
+
+comp = MyComponent("cathode", 0.5)
+data = comp.serialize()
+restored = MyComponent.deserialize(data)
+assert comp == restored
+```
+
+## Documentation
+
+Full documentation is available at [steer-core.readthedocs.io](https://steer-core.readthedocs.io/).
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Citation
+
+If you use this software, please cite it using the metadata in [CITATION.cff](CITATION.cff).
+
+## License
+
+This project is licensed under the AGPL-3.0-only license. See [LICENSE](LICENSE) for details.

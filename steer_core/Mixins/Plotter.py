@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -1511,4 +1514,60 @@ class PlotterMixin:
             paper_bgcolor="white",
         )
 
+        return PlotterMixin._apply_layout_defaults(fig, layout_defaults)
+
+    # ── Correlation heatmap ─────────────────────────────────────────────
+
+    @staticmethod
+    def plot_correlation_heatmap(
+        df: pd.DataFrame,
+        axis_labels: list[str],
+        template: str = "presentation",
+        layout_defaults: dict[str, Any] | None = None,
+    ) -> go.Figure:
+        """Create an annotated Pearson correlation heatmap.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame containing at least *axis_labels* as numeric columns.
+        axis_labels : list of str
+            Column names to include in the correlation matrix.
+        template : str
+            Plotly template name.
+        layout_defaults : dict, optional
+            Additional ``fig.update_layout`` overrides applied last.
+
+        Returns
+        -------
+        go.Figure
+        """
+        import numpy as np
+
+        corr = df[axis_labels].corr()
+        z = corr.values
+        labels = list(corr.columns)
+        text = np.around(z, decimals=2).astype(str)
+
+        fig = go.Figure(data=go.Heatmap(
+            z=z,
+            x=labels,
+            y=labels,
+            text=text,
+            texttemplate="%{text}",
+            textfont=dict(size=12),
+            colorscale="RdBu_r",
+            zmin=-1,
+            zmax=1,
+            colorbar=dict(title="r", thickness=15),
+            hovertemplate=(
+                "%{y} vs %{x}<br>r = %{z:.3f}<extra></extra>"
+            ),
+        ))
+        fig.update_layout(
+            template=template,
+            xaxis=dict(side="bottom", tickangle=-45),
+            yaxis=dict(autorange="reversed"),
+            margin=dict(l=120, r=40, t=60, b=120),
+        )
         return PlotterMixin._apply_layout_defaults(fig, layout_defaults)

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Mixin for update propagation through hierarchical object trees."""
 
 from typing import Optional, Any, Generator
@@ -120,6 +123,11 @@ class PropagationMixin:
     
     _parent: Optional[Any] = None
     _parent_attr_name: Optional[str] = None
+
+    # Mapping from internal dict keys to property setter names for propagation.
+    # Override in subclasses when a private attribute name doesn't match its
+    # public property setter (e.g. _canonical_separator -> separator).
+    _propagation_attr_map: dict = {}
     
     # -------------------------------------------------------------------------
     # Parent reference management
@@ -305,12 +313,18 @@ class PropagationMixin:
         Called after deserialization to re-establish the parent-child
         relationships that were lost during serialization. Also stores
         the attribute name for setter-based propagation.
+        
+        Uses ``_propagation_attr_map`` when the private attribute key
+        differs from its public property setter name.
         """
+        attr_map = self._propagation_attr_map
         for key, value in self.__dict__.items():
             if key in ('_parent', '_parent_attr_name'):
                 continue
-            # Derive the public attribute name (strip leading underscore if present)
-            attr_name = key[1:] if key.startswith('_') else key
+            if key in attr_map:
+                attr_name = attr_map[key]
+            else:
+                attr_name = key[1:] if key.startswith('_') else key
             self._set_parent_on_value(value, attr_name)
 
     def _set_parent_on_value(self, value: Any, attr_name: Optional[str] = None) -> None:
