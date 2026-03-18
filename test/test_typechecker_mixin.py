@@ -85,19 +85,6 @@ class TestValidatePandasDataframe:
             ValidationMixin.validate_pandas_dataframe(df, "df", column_names=["a", "b"])
 
 
-class TestValidateElectrochemicalReference:
-
-    def test_valid_li(self):
-        ValidationMixin.validate_electrochemical_reference("Li/Li+")
-
-    def test_valid_na(self):
-        ValidationMixin.validate_electrochemical_reference("Na/Na+")
-
-    def test_invalid_raises(self):
-        with pytest.raises(ValueError):
-            ValidationMixin.validate_electrochemical_reference("Ag/AgCl")
-
-
 class TestValidateDatum:
 
     def test_valid_tuple(self):

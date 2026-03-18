@@ -9,7 +9,7 @@ authors:
     affiliation: Stanford University
 version: "0.2.11"
 date-released: "2026-03-17"
-license: AGPL-3.0-only
+license: AGPL-3.0-or-later
 repository-code: "https://github.com/stanford-developers/steer-core"
 keywords:
   - energy

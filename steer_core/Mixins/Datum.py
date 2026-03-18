@@ -25,10 +25,9 @@ class DatumMixin:
       `@calculate_coordinates` or `@calculate_all_properties` as needed
     - For translation-based updates (e.g., assemblies with computed geometry),
       use `_compute_datum_translation()` helper before updating `_datum`
-    
-    Examples
-    --------
-    Recalculation pattern (most common):
+
+    Examples:
+        Recalculation pattern (most common)::
     
         @DatumMixin.datum.setter
         @calculate_coordinates
@@ -83,15 +82,11 @@ class DatumMixin:
     
     def _compute_datum_translation(self, new_datum_mm: Tuple[float, float, float]) -> Tuple[float, float, float]:
         """Compute translation vector from current datum to new datum.
-        
-        Parameters
-        ----------
-        new_datum_mm : Tuple[float, float, float]
-            New datum position in millimeters.
-            
-        Returns
-        -------
-        Tuple[float, float, float]
+
+        Args:
+            new_datum_mm: New datum position in millimeters.
+
+        Returns:
             Translation vector (dx, dy, dz) in meters, or (0, 0, 0) if no existing datum.
         """
         if not hasattr(self, '_datum') or self._datum is None:

@@ -18,17 +18,12 @@ class ColorMixin:
 
     @staticmethod
     def get_colorway(color1: str, color2: str, n: int) -> list[str]:
-        """
-        Generate a list of n hex colors interpolated between two HTML hex colors.
+        """Generate a list of n hex colors interpolated between two HTML hex colors.
 
-        Parameters
-        ----------
-        color1 : str
-            The first color in HTML hex format (e.g., '#ff0000').
-        color2 : str
-            The second color in HTML hex format (e.g., '#0000ff').
-        n : int
-            The number of colors to generate in the gradient.
+        Args:
+            color1: The first color in HTML hex format (e.g., '#ff0000').
+            color2: The second color in HTML hex format (e.g., '#0000ff').
+            n: The number of colors to generate in the gradient.
         """
         # Convert hex to RGB (0–255)
         rgb1 = np.array(pc.hex_to_rgb(color1))
@@ -44,20 +39,14 @@ class ColorMixin:
 
     @staticmethod
     def adjust_fill_opacity(color_str: str, opacity: float) -> str:
-        """
-        Adjust the fill opacity of any color format while preserving line opacity.
+        """Adjust the fill opacity of any color format while preserving line opacity.
 
-        Parameters
-        ----------
-        color_str : str
-            Color in any format (hex, rgb, rgba, named)
-        opacity : float
-            Target opacity (0.0 to 1.0)
+        Args:
+            color_str: Color in any format (hex, rgb, rgba, named).
+            opacity: Target opacity (0.0 to 1.0).
 
-        Returns
-        -------
-        str
-            Color string with adjusted opacity in rgba format
+        Returns:
+            Color string with adjusted opacity in rgba format.
         """
         if not color_str:
             return color_str
@@ -74,20 +63,14 @@ class ColorMixin:
 
     @staticmethod
     def _hex_to_rgba(hex_color: str, opacity: float) -> str:
-        """
-        Convert hex color to rgba with specified opacity.
+        """Convert hex color to rgba with specified opacity.
 
-        Parameters
-        ----------
-        hex_color : str
-            Hex color string (e.g., '#FF0000')
-        opacity : float
-            Target opacity (0.0 to 1.0)
+        Args:
+            hex_color: Hex color string (e.g., '#FF0000').
+            opacity: Target opacity (0.0 to 1.0).
 
-        Returns
-        -------
-        str
-            RGBA color string
+        Returns:
+            RGBA color string.
         """
         hex_color = hex_color.lstrip("#")
         if len(hex_color) == 6:
@@ -112,20 +95,14 @@ class ColorMixin:
 
     @staticmethod
     def _update_rgba_opacity(rgba_str: str, opacity: float) -> str:
-        """
-        Update the opacity component of an existing rgba color string.
+        """Update the opacity component of an existing rgba color string.
 
-        Parameters
-        ----------
-        rgba_str : str
-            Existing rgba color string (e.g., 'rgba(255, 0, 0, 0.5)')
-        opacity : float
-            New opacity value (0.0 to 1.0)
+        Args:
+            rgba_str: Existing rgba color string (e.g., 'rgba(255, 0, 0, 0.5)').
+            opacity: New opacity value (0.0 to 1.0).
 
-        Returns
-        -------
-        str
-            Updated rgba color string
+        Returns:
+            Updated rgba color string.
         """
         if "rgba(" not in rgba_str:
             return rgba_str
@@ -139,18 +116,13 @@ class ColorMixin:
 
     @staticmethod
     def get_color_format(color_str: str) -> str:
-        """
-        Detect the format of a color string.
+        """Detect the format of a color string.
 
-        Parameters
-        ----------
-        color_str : str
-            Color string in any format
+        Args:
+            color_str: Color string in any format.
 
-        Returns
-        -------
-        str
-            Color format: 'hex', 'rgb', 'rgba', 'hsl', 'hsla', 'named', or 'unknown'
+        Returns:
+            Color format: 'hex', 'rgb', 'rgba', 'hsl', 'hsla', 'named', or 'unknown'.
         """
         if not color_str or not isinstance(color_str, str):
             return "unknown"
@@ -172,20 +144,14 @@ class ColorMixin:
 
     @staticmethod
     def validate_opacity(opacity: float, param_name: str = "opacity") -> None:
-        """
-        Validate that opacity is within valid range.
+        """Validate that opacity is within valid range.
 
-        Parameters
-        ----------
-        opacity : float
-            Opacity value to validate
-        param_name : str
-            Parameter name for error messages
+        Args:
+            opacity: Opacity value to validate.
+            param_name: Parameter name for error messages.
 
-        Raises
-        ------
-        ValueError
-            If opacity is not between 0.0 and 1.0
+        Raises:
+            ValueError: If opacity is not between 0.0 and 1.0.
         """
         if not isinstance(opacity, (int, float)):
             raise ValueError(f"{param_name} must be a number, got {type(opacity)}")
@@ -195,15 +161,11 @@ class ColorMixin:
 
     @staticmethod
     def adjust_trace_opacity(trace, opacity: float) -> None:
-        """
-        Adjust opacity of a plotly trace in-place.
+        """Adjust opacity of a plotly trace in-place.
 
-        Parameters
-        ----------
-        trace : plotly trace object
-            The trace to modify
-        opacity : float
-            Target opacity (0.0 to 1.0)
+        Args:
+            trace: The plotly trace to modify.
+            opacity: Target opacity (0.0 to 1.0).
         """
         ColorMixin.validate_opacity(opacity)
 

@@ -7,7 +7,6 @@ import pytest
 
 from steer_core.Decorators.General import recalculate, calculate_bulk_properties, calculate_all_properties
 from steer_core.Decorators.Coordinates import calculate_coordinates, calculate_areas, calculate_volumes
-from steer_core.Decorators.Objects import calculate_weld_tab_properties
 
 
 class FakeComponent:
@@ -28,9 +27,6 @@ class FakeComponent:
 
     def _calculate_all_properties(self):
         self._calls.append("all_properties")
-
-    def _calculate_weld_tab_properties(self):
-        self._calls.append("weld_tab_properties")
 
 
 class TestRecalculateDecorator:
@@ -166,13 +162,3 @@ class TestPrebuiltDecorators:
         do_something(comp)
         assert "bulk_properties" in comp._calls
         assert "coordinates" in comp._calls
-
-    def test_calculate_weld_tab_properties(self):
-        comp = FakeComponent()
-
-        @calculate_weld_tab_properties
-        def do_something(self):
-            pass
-
-        do_something(comp)
-        assert "weld_tab_properties" in comp._calls

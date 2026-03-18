@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Modelling energy storage from cell to site - STEER OpenCell Design"
 readme = "README.md"
 requires-python = ">=3.10"
-license = "AGPL-3.0-only"
+license = {text = "AGPL-3.0-or-later"}
 authors = [
     {name = "Nicholas Siemons", email = "nsiemons@stanford.edu"},
 ]
@@ -18,6 +18,7 @@ maintainers = [
 keywords = ["energy", "storage", "battery", "modeling", "simulation"]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -44,7 +45,7 @@ dependencies = [
 Homepage = "https://github.com/stanford-developers/steer-core/"
 Repository = "https://github.com/stanford-developers/steer-core/"
 Issues = "https://github.com/stanford-developers/steer-core/issues"
-Documentation = "https://steer-core.readthedocs.io/"
+Documentation = "https://stanford-developers.github.io/steer-core/"
 
 [project.optional-dependencies]
 dev = [
@@ -60,10 +61,9 @@ test = [
     "pytest-cov",
 ]
 docs = [
-    "sphinx>=7.0",
-    "furo",
-    "sphinx-autodoc-typehints",
-    "myst-parser",
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+    "mkdocstrings[python]>=0.24",
 ]
 
 [tool.setuptools]
