@@ -1,9 +1,9 @@
 # steer-core
 
 [![Tests](https://github.com/stanford-developers/steer-core/actions/workflows/tests.yml/badge.svg)](https://github.com/stanford-developers/steer-core/actions/workflows/tests.yml)
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![Documentation](https://readthedocs.org/projects/steer-core/badge/?version=latest)](https://steer-core.readthedocs.io/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://stanford-developers.github.io/steer-core/)
 
 Base utilities for the OpenCell platform: constants, mixins (Serializer, Validation, Plotter), decorators, and the DataManager REST API client.
 
@@ -113,7 +113,7 @@ assert comp == restored
 
 ## Documentation
 
-Full documentation is available at [steer-core.readthedocs.io](https://steer-core.readthedocs.io/).
+Full documentation is available at [stanford-developers.github.io/steer-core](https://stanford-developers.github.io/steer-core/).
 
 ## Contributing
 
@@ -127,8 +127,9 @@ If you use this software, please cite it using the metadata in [CITATION.cff](CI
 
 steer-core is dual-licensed:
 
-- **AGPL-3.0-only** — free for open-source use. See [LICENSE](LICENSE) for the full text.
-- **Proprietary license** — available for commercial or closed-source use. Contact
-  [nsiemons@stanford.edu](mailto:nsiemons@stanford.edu) for licensing inquiries.
+- **Open source** — [GNU Affero General Public License v3.0 or later](https://www.gnu.org/licenses/agpl-3.0) (AGPL-3.0-or-later)
+- **Commercial** — A separate commercial license is available for use without AGPL-3.0 copyleft requirements. Contact [nsiemons@stanford.edu](mailto:nsiemons@stanford.edu) for details.
+
+See [LICENCE.txt](LICENCE.txt) for full terms.
 
 Contributions require signing a [Contributor License Agreement](CLA.md).

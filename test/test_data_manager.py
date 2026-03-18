@@ -17,9 +17,29 @@ from steer_core.Data.DataManager import (
     DataManagerError,
     ForbiddenError,
     NotFoundError,
-    MATERIAL_TABLES,
-    CELL_TABLES,
-    ALL_TABLES,
+)
+
+# Register domain tables for tests (normally done by steer_opencell_design)
+_TEST_MATERIAL_TABLES = {
+    "anode_materials",
+    "cathode_materials",
+    "binder_materials",
+    "conductive_additive_materials",
+    "current_collector_materials",
+    "insulation_materials",
+    "separator_materials",
+    "tape_materials",
+    "prismatic_container_materials",
+}
+_TEST_CELL_TABLES = {"cell_references", "teardowns", "user_designs", "cell_submissions"}
+DataManager.register_tables(
+    material_tables=_TEST_MATERIAL_TABLES,
+    cell_tables=_TEST_CELL_TABLES,
+    material_meta_cols=["name", "date", "version", "reference"],
+    cell_meta_cols=[
+        "name", "form_factor", "internal_construction",
+        "date_created", "version", "chemistry", "visibility", "owner_id",
+    ],
 )
 
 
@@ -117,7 +137,7 @@ class TestGetTableNames:
 
     def test_returns_sorted_list(self, dm):
         names = dm.get_table_names()
-        assert names == sorted(ALL_TABLES)
+        assert names == sorted(_TEST_MATERIAL_TABLES | _TEST_CELL_TABLES)
         assert isinstance(names, list)
 
 
@@ -159,23 +179,6 @@ class TestRequestErrorHandling:
     def test_204_returns_none(self, dm):
         dm._session.request.return_value = self._mock_response(204)
         assert dm._request("DELETE", "/test") is None
-
-
-class TestCheckNameAvailable:
-
-    def test_name_available(self, dm):
-        resp = MagicMock()
-        resp.status_code = 200
-        resp.json.return_value = {"available": True}
-        dm._session.request.return_value = resp
-        assert dm.check_name_available("NewCell") is True
-
-    def test_name_taken(self, dm):
-        resp = MagicMock()
-        resp.status_code = 200
-        resp.json.return_value = {"available": False}
-        dm._session.request.return_value = resp
-        assert dm.check_name_available("ExistingCell") is False
 
 
 class TestIsDevelopment:

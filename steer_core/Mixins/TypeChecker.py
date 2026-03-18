@@ -12,26 +12,18 @@ import numpy as np
 from steer_core.Constants.Format import DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT
 from steer_core.Utils import is_plotly_trace as _is_plotly_trace
 
-ALLOWED_REFERENCE = ["Na/Na+", "Li/Li+"]
-
 
 class ValidationMixin:
 
     @staticmethod
     def validate_plotly_trace(value: object, name: str) -> bool:
-        """
-        Check whether *value* is a Plotly trace object.
+        """Check whether *value* is a Plotly trace object.
 
-        Parameters
-        ----------
-        value : object
-            The value to validate.
-        name : str
-            The name of the parameter (unused, kept for API compatibility).
+        Args:
+            value: The value to validate.
+            name: The name of the parameter (unused, kept for API compatibility).
 
-        Returns
-        -------
-        bool
+        Returns:
             ``True`` if *value* is a Plotly trace, ``False`` otherwise.
         """
         return _is_plotly_trace(value)
@@ -40,27 +32,20 @@ class ValidationMixin:
     def validate_type(value, expected_type, name: str) -> None:
         """Validate that a value is of the expected type or one of multiple allowed types.
 
-        Parameters
-        ----------
-        value : Any
-            The value to validate.
-        expected_type : Type | Iterable[Type]
-            A single expected type or an iterable (list/tuple/set) of acceptable types.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The value to validate.
+            expected_type: A single expected type or an iterable (list/tuple/set) of acceptable types.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        TypeError
-            If the value is not an instance of any of the expected types.
+        Raises:
+            TypeError: If the value is not an instance of any of the expected types.
 
-        Examples
-        --------
-        >>> ValidationMixin.validate_type(5, int, 'count')            # OK
-        >>> ValidationMixin.validate_type(5, (int, float), 'count')   # OK
-        >>> ValidationMixin.validate_type('x', (int, float), 'count') # TypeError
-        >>> ValidationMixin.validate_type([1,2,3], list, 'items')     # OK
-        >>> ValidationMixin.validate_type([1,2,3], [list, tuple], 'items') # OK
+        Examples:
+            >>> ValidationMixin.validate_type(5, int, 'count')            # OK
+            >>> ValidationMixin.validate_type(5, (int, float), 'count')   # OK
+            >>> ValidationMixin.validate_type('x', (int, float), 'count') # TypeError
+            >>> ValidationMixin.validate_type([1,2,3], list, 'items')     # OK
+            >>> ValidationMixin.validate_type([1,2,3], [list, tuple], 'items') # OK
         """
         # Normalize expected types to a tuple for isinstance
         if isinstance(expected_type, (list, set)):
@@ -76,20 +61,14 @@ class ValidationMixin:
 
     @staticmethod
     def validate_percentage(value: float, name: str) -> None:
-        """
-        Validate that a value is a percentage (between 0 and 100).
+        """Validate that a value is a percentage (between 0 and 100).
 
-        Parameters
-        ----------
-        value : float
-            The value to validate.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The value to validate.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        ValueError
-            If the value is not a percentage.
+        Raises:
+            ValueError: If the value is not a percentage.
         """
         if not isinstance(value, (int, float)):
             raise TypeError(f"{name} must be a number. Provided: {value}.")
@@ -101,20 +80,14 @@ class ValidationMixin:
 
     @staticmethod
     def validate_fraction(value: float, name: str) -> None:
-        """
-        Validate that a value is a fraction (between 0 and 1).
+        """Validate that a value is a fraction (between 0 and 1).
 
-        Parameters
-        ----------
-        value : float
-            The value to validate.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The value to validate.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        ValueError
-            If the value is not a fraction.
+        Raises:
+            ValueError: If the value is not a fraction.
         """
         if not (0 <= value <= 1):
             raise ValueError(
@@ -125,20 +98,14 @@ class ValidationMixin:
     def validate_pandas_dataframe(
         df: pd.DataFrame, name: str, column_names: list | None = None
     ) -> None:
-        """
-        Validate that the input is a pandas DataFrame.
+        """Validate that the input is a pandas DataFrame.
 
-        Parameters
-        ----------
-        df : pd.DataFrame
-            The DataFrame to validate.
-        name : str
-            The name of the DataFrame for error messages.
+        Args:
+            df: The DataFrame to validate.
+            name: The name of the DataFrame for error messages.
 
-        Raises
-        ------
-        TypeError
-            If the input is not a pandas DataFrame.
+        Raises:
+            TypeError: If the input is not a pandas DataFrame.
         """
         if not isinstance(df, pd.DataFrame):
             raise TypeError(f"{name} must be a pandas DataFrame. Provided: {type(df)}.")
@@ -152,42 +119,14 @@ class ValidationMixin:
                 )
 
     @staticmethod
-    def validate_electrochemical_reference(reference: str) -> None:
-        """
-        Validate the electrochemical reference electrode.
-
-        Parameters
-        ----------
-        reference : str
-            The reference electrode to validate.
-
-        Raises
-        ------
-        ValueError
-            If the reference is not a valid electrochemical reference.
-        """
-        ValidationMixin.validate_string(reference, "Electrochemical reference")
-
-        if reference not in ALLOWED_REFERENCE:
-            raise ValueError(
-                f"Invalid electrochemical reference: {reference}. "
-                f"Must be one of {ALLOWED_REFERENCE}."
-            )
-
-    @staticmethod
     def validate_datum(datum: np.ndarray) -> None:
-        """
-        Validate the datum point for extrusion.
+        """Validate the datum point for extrusion.
 
-        Parameters
-        ----------
-        datum : np.ndarray
-            Datum point for extrusion (shape (3,))
+        Args:
+            datum: Datum point for extrusion (shape (3,)).
 
-        Raises
-        ------
-        ValueError
-            If the datum does not have exactly 3 coordinates.
+        Raises:
+            ValueError: If the datum does not have exactly 3 coordinates.
         """
         if not isinstance(datum, (tuple, list, np.ndarray)) or len(datum) != 3:
             raise ValueError("Datum must be a 3D point with exactly 3 coordinates.")
@@ -197,20 +136,14 @@ class ValidationMixin:
 
     @staticmethod
     def validate_positive_float(value: float, name: str) -> None:
-        """
-        Validate that a value is a positive float.
+        """Validate that a value is a positive float.
 
-        Parameters
-        ----------
-        value : float
-            The value to validate.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The value to validate.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        ValueError
-            If the value is not a positive float.
+        Raises:
+            ValueError: If the value is not a positive float.
         """
         if not isinstance(value, (int, float, np.int64, np.float64)):
             raise TypeError(f"{name} must be a number. Provided: {type(value).__name__}.")
@@ -221,31 +154,23 @@ class ValidationMixin:
     def validate_positive_int(value: int, name: str, strictly: bool = True) -> None:
         """Validate that a value is a positive integer.
 
-        Parameters
-        ----------
-        value : int
-            The value to validate.
-        name : str
-            The name of the parameter for error messages.
-        strictly : bool, optional
-            If True (default), value must be strictly positive (> 0).
-            If False, value must be non-negative (>= 0).
+        Args:
+            value: The value to validate.
+            name: The name of the parameter for error messages.
+            strictly: If True (default), value must be strictly positive (> 0).
+                If False, value must be non-negative (>= 0).
 
-        Raises
-        ------
-        TypeError
-            If the value is not an integer (bool is rejected even though it is a subclass of int).
-        ValueError
-            If the integer does not meet the positivity requirement.
+        Raises:
+            TypeError: If the value is not an integer (bool is rejected even though it is a subclass of int).
+            ValueError: If the integer does not meet the positivity requirement.
 
-        Examples
-        --------
-        >>> ValidationMixin.validate_positive_int(5, 'count')              # OK
-        >>> ValidationMixin.validate_positive_int(0, 'count')              # ValueError (strict mode)
-        >>> ValidationMixin.validate_positive_int(0, 'count', strictly=False)  # OK (non-strict mode)
-        >>> ValidationMixin.validate_positive_int(-3, 'count')             # ValueError
-        >>> ValidationMixin.validate_positive_int(True, 'flag')            # TypeError (bool rejected)
-        >>> ValidationMixin.validate_positive_int(12_000, 'cycles')        # OK
+        Examples:
+            >>> ValidationMixin.validate_positive_int(5, 'count')              # OK
+            >>> ValidationMixin.validate_positive_int(0, 'count')              # ValueError (strict mode)
+            >>> ValidationMixin.validate_positive_int(0, 'count', strictly=False)  # OK (non-strict mode)
+            >>> ValidationMixin.validate_positive_int(-3, 'count')             # ValueError
+            >>> ValidationMixin.validate_positive_int(True, 'flag')            # TypeError (bool rejected)
+            >>> ValidationMixin.validate_positive_int(12_000, 'cycles')        # OK
         """
         # Reject bool explicitly (bool is subclass of int)
         if isinstance(value, bool) or not isinstance(value, int):
@@ -260,40 +185,28 @@ class ValidationMixin:
 
     @staticmethod
     def validate_string(value: str, name: str) -> None:
-        """
-        Validate that a value is a string.
+        """Validate that a value is a string.
 
-        Parameters
-        ----------
-        value : str
-            The value to validate.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The value to validate.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        TypeError
-            If the value is not a string.
+        Raises:
+            TypeError: If the value is not a string.
         """
         if not isinstance(value, str):
             raise TypeError(f"{name} must be a string. Provided: {value}.")
 
     @staticmethod
     def validate_two_iterable_of_floats(value: tuple, name: str) -> None:
-        """
-        Validate that a value is a tuple of two iterables.
+        """Validate that a value is a tuple of two iterables.
 
-        Parameters
-        ----------
-        value : tuple
-            The value to validate.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The value to validate.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        TypeError
-            If the value is not a tuple of two floats.
+        Raises:
+            TypeError: If the value is not a tuple of two floats.
         """
         # Accept both tuples and lists
         if not isinstance(value, (tuple, list)) or len(value) != 2:
@@ -315,20 +228,14 @@ class ValidationMixin:
 
     @staticmethod
     def validate_positive_float_list(value: list, name: str) -> None:
-        """
-        Validate that a value is a list of positive floats.
+        """Validate that a value is a list of positive floats.
 
-        Parameters
-        ----------
-        value : list
-            The value to validate.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The value to validate.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        TypeError
-            If the value is not a list of positive floats.
+        Raises:
+            TypeError: If the value is not a list of positive floats.
         """
         if not isinstance(value, list) or not all(
             isinstance(v, (int, float)) and v > 0 for v in value
@@ -342,33 +249,24 @@ class ValidationMixin:
 
     @staticmethod
     def validate_enum_string(value, enum_class: Type[Enum], name: str) -> None:
-        """
-        Validate that a string value belongs to an enum class.
+        """Validate that a string value belongs to an enum class.
 
-        Parameters
-        ----------
-        value : str
-            The string value to validate.
-        enum_class : Type[Enum]
-            The enum class to validate against.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The string value to validate.
+            enum_class: The enum class to validate against.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        TypeError
-            If the value is not a string.
-        ValueError
-            If the string value is not a valid member of the enum class.
+        Raises:
+            TypeError: If the value is not a string.
+            ValueError: If the string value is not a valid member of the enum class.
 
-        Examples
-        --------
-        >>> from enum import Enum
-        >>> class AllocationShape(Enum):
-        ...     CIRCLE = 'circle'
-        ...     SQUARE = 'square'
-        >>> ValidationMixin.validate_enum_string('circle', AllocationShape, 'shape')  # OK
-        >>> ValidationMixin.validate_enum_string('triangle', AllocationShape, 'shape')  # Raises ValueError
+        Examples:
+            >>> from enum import Enum
+            >>> class AllocationShape(Enum):
+            ...     CIRCLE = 'circle'
+            ...     SQUARE = 'square'
+            >>> ValidationMixin.validate_enum_string('circle', AllocationShape, 'shape')  # OK
+            >>> ValidationMixin.validate_enum_string('triangle', AllocationShape, 'shape')  # Raises ValueError
         """
         if not isinstance(value, str):
             raise TypeError(f"{name} must be a string. Provided: {type(value).__name__}.")
@@ -382,29 +280,22 @@ class ValidationMixin:
 
     @staticmethod
     def validate_datetime_string(value: str, name: str) -> None:
-        """
-        Validate that a string is in a valid datetime format.
+        """Validate that a string is in a valid datetime format.
+
         Accepts either 'YYYY-MM-DD-HH' (hourly) or 'YYYY-MM-DD' (daily) formats.
 
-        Parameters
-        ----------
-        value : str
-            The datetime string to validate.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The datetime string to validate.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        TypeError
-            If the value is not a string.
-        ValueError
-            If the string is not in a valid datetime format.
+        Raises:
+            TypeError: If the value is not a string.
+            ValueError: If the string is not in a valid datetime format.
 
-        Examples
-        --------
-        >>> ValidationMixin.validate_datetime_string('2024-01-15-14', 'start_dt')  # OK
-        >>> ValidationMixin.validate_datetime_string('2024-01-15', 'start_dt')     # OK
-        >>> ValidationMixin.validate_datetime_string('2024/01/15', 'start_dt')     # Raises ValueError
+        Examples:
+            >>> ValidationMixin.validate_datetime_string('2024-01-15-14', 'start_dt')  # OK
+            >>> ValidationMixin.validate_datetime_string('2024-01-15', 'start_dt')     # OK
+            >>> ValidationMixin.validate_datetime_string('2024/01/15', 'start_dt')     # Raises ValueError
         """
         if not isinstance(value, str):
             raise TypeError(f"{name} must be a string. Provided: {type(value).__name__}.")
@@ -425,27 +316,20 @@ class ValidationMixin:
 
     @staticmethod
     def validate_number(value, name: str) -> None:
-        """
-        Validate that a value is a numeric amount (int or float, but not bool).
+        """Validate that a value is a numeric amount (int or float, but not bool).
 
-        Parameters
-        ----------
-        value : int or float
-            The numeric value to validate.
-        name : str
-            The name of the parameter for error messages.
+        Args:
+            value: The numeric value to validate.
+            name: The name of the parameter for error messages.
 
-        Raises
-        ------
-        TypeError
-            If the value is a bool or not a numeric type (int or float).
+        Raises:
+            TypeError: If the value is a bool or not a numeric type (int or float).
 
-        Examples
-        --------
-        >>> ValidationMixin.validate_number(42, 'amount')      # OK
-        >>> ValidationMixin.validate_number(3.14, 'amount')    # OK
-        >>> ValidationMixin.validate_number(True, 'amount')    # Raises TypeError
-        >>> ValidationMixin.validate_number('100', 'amount')   # Raises TypeError
+        Examples:
+            >>> ValidationMixin.validate_number(42, 'amount')      # OK
+            >>> ValidationMixin.validate_number(3.14, 'amount')    # OK
+            >>> ValidationMixin.validate_number(True, 'amount')    # Raises TypeError
+            >>> ValidationMixin.validate_number('100', 'amount')   # Raises TypeError
         """
         if isinstance(value, bool):
             raise TypeError(f"{name} must be a number (int or float), not bool.")

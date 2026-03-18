@@ -23,20 +23,14 @@ class CoordinateMixin:
     def get_radius_of_points(coords: np.ndarray) -> Tuple[float, Tuple[float, float]]:
         """Calculate the radius of a spiral given its coordinates.
 
-        Parameters
-        ----------
-        coords : np.ndarray
-            Array of shape (N, 2) with columns [x, z]
+        Args:
+            coords: Array of shape (N, 2) with columns [x, z].
 
-        Returns
-        -------
-        Tuple[float, Tuple[float, float]]
-            (radius, (center_x, center_z)) where radius is in meters
+        Returns:
+            (radius, (center_x, center_z)) where radius is in meters.
 
-        Raises
-        ------
-        ValueError
-            If input coordinates are invalid or insufficient valid points
+        Raises:
+            ValueError: If input coordinates are invalid or insufficient valid points.
         """
         # Filter out rows with NaN or None values
         valid_mask = ~(np.isnan(coords).any(axis=1) | pd.isna(coords).any(axis=1))
@@ -56,18 +50,13 @@ class CoordinateMixin:
     def _calculate_segment_center_line(x_coords: np.ndarray, z_coords: np.ndarray) -> np.ndarray:
         """
         Calculate center line for a single segment of coordinates.
-        
-        Parameters
-        ----------
-        x_coords : np.ndarray
-            X coordinates for the segment
-        z_coords : np.ndarray
-            Z coordinates for the segment
-            
-        Returns
-        -------
-        np.ndarray
-            Array containing start and end points of the center line [[min_x, mean_z], [max_x, mean_z]]
+
+        Args:
+            x_coords: X coordinates for the segment.
+            z_coords: Z coordinates for the segment.
+
+        Returns:
+            Array containing start and end points of the center line [[min_x, mean_z], [max_x, mean_z]].
         """
         min_x = np.nanmin(x_coords)
         max_x = np.nanmax(x_coords)
@@ -81,16 +70,12 @@ class CoordinateMixin:
     def get_xz_center_line(coordinates: np.ndarray) -> np.ndarray:
         """
         Generate center line(s) for coordinate data, handling both single and multi-segment polygons.
-        
-        Parameters
-        ----------
-        coordinates : np.ndarray
-            Array of 3D coordinates with shape (N, 3) where columns are [x, y, z].
-            NaN values in x or z coordinates indicate breaks between polygon segments.
-            
-        Returns
-        -------
-        np.ndarray
+
+        Args:
+            coordinates: Array of 3D coordinates with shape (N, 3) where columns are [x, y, z].
+                NaN values in x or z coordinates indicate breaks between polygon segments.
+
+        Returns:
             For single polygon: Array with shape (2, 2) containing start and end points.
             For multiple segments: Array with center lines for each segment separated by [NaN, NaN].
             For empty coordinates: Empty array with shape (0, 2).
@@ -264,21 +249,14 @@ class CoordinateMixin:
         Build a NumPy array representing a square or rectangle defined by its bottom-left corner (x, y)
         and its width and height.
 
-        Parameters
-        ----------
-        x : float
-            The x-coordinate of the bottom-left corner of the square.
-        y : float
-            The y-coordinate of the bottom-left corner of the square.
-        x_width : float
-            The width of the square.
-        y_width : float
-            The height of the square.
+        Args:
+            x: The x-coordinate of the bottom-left corner of the square.
+            y: The y-coordinate of the bottom-left corner of the square.
+            x_width: The width of the square.
+            y_width: The height of the square.
 
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray]
-            Tuple containing x and y coordinate arrays defining the square/rectangle
+        Returns:
+            Tuple containing x and y coordinate arrays defining the square/rectangle.
         """
         x_coords = np.array([x, x, x + x_width, x + x_width, x])
         y_coords = np.array([y, y + y_width, y + y_width, y, y])
@@ -291,23 +269,15 @@ class CoordinateMixin:
         """
         Build a NumPy array representing a circle defined by its center and radius.
 
-        Parameters
-        ----------
-        center_x : float
-            The x-coordinate of the circle center.
-        center_y : float
-            The y-coordinate of the circle center.
-        radius : float
-            The radius of the circle.
-        num_points : int, optional
-            Number of points to use for the circle approximation, by default 64
-        anticlockwise : bool, optional
-            If True, points are ordered anticlockwise; if False, clockwise, by default True
+        Args:
+            center_x: The x-coordinate of the circle center.
+            center_y: The y-coordinate of the circle center.
+            radius: The radius of the circle.
+            num_points: Number of points to use for the circle approximation. Defaults to 64.
+            anticlockwise: If True, points are ordered anticlockwise; if False, clockwise. Defaults to True.
 
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray]
-            Tuple containing x and y coordinate arrays defining the circle
+        Returns:
+            Tuple containing x and y coordinate arrays defining the circle.
         """
         # Generate angles from 0 to 2π
         angles = np.linspace(0, 2 * np.pi, num_points + 1)
@@ -373,25 +343,18 @@ class CoordinateMixin:
         """
         Order 3D coordinates in clockwise direction based on a specified plane.
         Handles multiple coordinate blocks separated by NaN rows.
-        
-        Parameters
-        ----------
-        coords : np.ndarray
-            Array of 3D coordinates with shape (N, 3) where columns are [x, y, z].
-            NaN rows indicate separations between coordinate blocks.
-        plane : str, optional
-            Plane to use for ordering ('xy', 'xz', 'yz'), by default 'xy'
-            
-        Returns
-        -------
-        np.ndarray
+
+        Args:
+            coords: Array of 3D coordinates with shape (N, 3) where columns are [x, y, z].
+                NaN rows indicate separations between coordinate blocks.
+            plane: Plane to use for ordering ('xy', 'xz', 'yz'). Defaults to 'xy'.
+
+        Returns:
             Sorted coordinates array with same shape as input, with each block
-            sorted clockwise and separated by NaN rows
-            
-        Raises
-        ------
-        ValueError
-            If coords array doesn't have shape (N, 3) or plane is invalid
+            sorted clockwise and separated by NaN rows.
+
+        Raises:
+            ValueError: If coords array doesn't have shape (N, 3) or plane is invalid.
         """
         if len(coords.shape) != 2 or coords.shape[1] != 3:
             raise ValueError("coords must be a 2D array with 3 columns (x, y, z)")
@@ -427,16 +390,12 @@ class CoordinateMixin:
     def concat_with_nan_separators(arrays: list) -> np.ndarray:
         """
         Efficiently concatenate numpy arrays with NaN separators.
-        
-        Parameters
-        ----------
-        arrays : list
-            List of numpy arrays to concatenate
-            
-        Returns
-        -------
-        np.ndarray
-            Concatenated array with NaN separators
+
+        Args:
+            arrays: List of numpy arrays to concatenate.
+
+        Returns:
+            Concatenated array with NaN separators.
         """
         if not arrays:
             return np.array([])
@@ -471,18 +430,13 @@ class CoordinateMixin:
     ) -> np.ndarray:
         """
         Sort a single coordinate block clockwise.
-        
-        Parameters
-        ----------
-        coords : np.ndarray
-            Array of 3D coordinates with shape (N, 3)
-        plane : str
-            Plane to use for ordering ('xy', 'xz', 'yz')
-            
-        Returns
-        -------
-        np.ndarray
-            Sorted coordinates array
+
+        Args:
+            coords: Array of 3D coordinates with shape (N, 3).
+            plane: Plane to use for ordering ('xy', 'xz', 'yz').
+
+        Returns:
+            Sorted coordinates array.
         """
         axis_1_idx, axis_2_idx = CoordinateMixin._PLANE_MAPPING[plane]
         
@@ -506,16 +460,12 @@ class CoordinateMixin:
     def _extract_coordinate_blocks(coords: np.ndarray) -> list:
         """
         Extract coordinate blocks separated by NaN rows.
-        
-        Parameters
-        ----------
-        coords : np.ndarray
-            Array of 3D coordinates with NaN row separators
-            
-        Returns
-        -------
-        list
-            List of coordinate block arrays
+
+        Args:
+            coords: Array of 3D coordinates with NaN row separators.
+
+        Returns:
+            List of coordinate block arrays.
         """
         blocks = []
         x_coords = coords[:, 0]
@@ -543,16 +493,12 @@ class CoordinateMixin:
     def _concatenate_coordinate_blocks_with_nans(blocks: list) -> np.ndarray:
         """
         Concatenate coordinate blocks with NaN row separators.
-        
-        Parameters
-        ----------
-        blocks : list
-            List of coordinate block arrays
-            
-        Returns
-        -------
-        np.ndarray
-            Concatenated array with NaN separators
+
+        Args:
+            blocks: List of coordinate block arrays.
+
+        Returns:
+            Concatenated array with NaN separators.
         """
         if not blocks:
             return np.array([]).reshape(0, 3)
@@ -688,22 +634,15 @@ class CoordinateMixin:
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Extrude a 2D footprint to 3D, handling both single and multi-segment polygons.
-        
-        Parameters
-        ----------
-        x : np.ndarray
-            Array of x coordinates. NaN values indicate segment separators.
-        y : np.ndarray
-            Array of y coordinates. NaN values indicate segment separators.
-        datum : np.ndarray
-            Datum point for extrusion (shape (3,))
-        thickness : float
-            Thickness of the extrusion
-            
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-            Arrays of x, y, z coordinates and side labels, with NaN separators between segments
+
+        Args:
+            x: Array of x coordinates. NaN values indicate segment separators.
+            y: Array of y coordinates. NaN values indicate segment separators.
+            datum: Datum point for extrusion (shape (3,)).
+            thickness: Thickness of the extrusion.
+
+        Returns:
+            Arrays of x, y, z coordinates and side labels, with NaN separators between segments.
         """
         if not np.isnan(x).any() and not np.isnan(y).any():
             return CoordinateMixin._extrude_single_footprint(x, y, datum, thickness)
@@ -725,18 +664,13 @@ class CoordinateMixin:
     def _extract_coordinate_segments(x: np.ndarray, y: np.ndarray, unify_xy: bool = False) -> list:
         """
         Extract coordinate segments separated by NaN values.
-        
-        Parameters
-        ----------
-        x : np.ndarray
-            X coordinates with NaN separators
-        y : np.ndarray
-            Y coordinates with NaN separators
-            
-        Returns
-        -------
-        list
-            List of (segment_x, segment_y) tuples
+
+        Args:
+            x: X coordinates with NaN separators.
+            y: Y coordinates with NaN separators.
+
+        Returns:
+            List of (segment_x, segment_y) tuples.
         """
         segments = []
         x_is_nan = np.isnan(x)
@@ -767,16 +701,12 @@ class CoordinateMixin:
     def _concatenate_with_separators(sections: list) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Concatenate extruded sections with NaN separators.
-        
-        Parameters
-        ----------
-        sections : list
-            List of (x_ext, y_ext, z_ext, side_ext) tuples
-            
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-            Concatenated arrays with NaN separators
+
+        Args:
+            sections: List of (x_ext, y_ext, z_ext, side_ext) tuples.
+
+        Returns:
+            Concatenated arrays with NaN separators.
         """
         if not sections:
             return np.array([]), np.array([]), np.array([]), np.array([])
@@ -813,21 +743,14 @@ class CoordinateMixin:
         """
         Extrude the 2D footprint to 3D and label each point with its side ('a' or 'b'), with 'a' being the top side and 'b' the bottom side.
 
-        Parameters
-        ----------
-        x : np.ndarray
-            Array of x coordinates (length N)
-        y : np.ndarray
-            Array of y coordinates (length N)
-        datum : np.ndarray
-            Datum point for extrusion (shape (3,))
-        thickness : float
-            Thickness of the extrusion
+        Args:
+            x: Array of x coordinates (length N).
+            y: Array of y coordinates (length N).
+            datum: Datum point for extrusion (shape (3,)).
+            thickness: Thickness of the extrusion.
 
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-            Arrays of x, y, z, and side for both A and B sides (each of length 2N)
+        Returns:
+            Arrays of x, y, z, and side for both A and B sides (each of length 2N).
         """
         z_a = datum[2] + thickness / 2
         z_b = datum[2] - thickness / 2
@@ -847,23 +770,16 @@ class CoordinateMixin:
     ) -> float:
         """
         Calculate the intersection area between two sets of coordinates.
-        
-        Parameters
-        ----------
-        coords1 : np.ndarray
-            First set of coordinates (N, 2) with columns [x, y]
-        coords2 : np.ndarray
-            Second set of coordinates (M, 2) with columns [x, y]
-            
-        Returns
-        -------
-        float
-            Intersection area between the two polygons
-            
-        Raises
-        ------
-        ValueError
-            If either coordinate set has insufficient valid points for polygon creation
+
+        Args:
+            coords1: First set of coordinates (N, 2) with columns [x, y].
+            coords2: Second set of coordinates (M, 2) with columns [x, y].
+
+        Returns:
+            Intersection area between the two polygons.
+
+        Raises:
+            ValueError: If either coordinate set has insufficient valid points for polygon creation.
         """
         # Filter out rows with NaN or None values from coords1
         valid_mask1 = ~(np.isnan(coords1).any(axis=1) | pd.isna(coords1).any(axis=1))
@@ -892,33 +808,23 @@ class CoordinateMixin:
     ) -> np.ndarray:
         """
         Insert rows of NaNs when gaps in a specified column exceed a tolerance threshold.
-        
-        Parameters
-        ----------
-        data : np.ndarray
-            Input array with shape (N, M) where N is number of rows and M is number of columns
-        column_index : int
-            Index of the column to analyze for gaps (0-based indexing)
-        tolerance_multiplier : float, optional
-            Multiplier for average gap to determine tolerance threshold, by default 2.0
-            
-        Returns
-        -------
-        np.ndarray
-            Array with NaN rows inserted where gaps exceed the tolerance
-            
-        Raises
-        ------
-        ValueError
-            If column_index is out of bounds for the array
-        IndexError
-            If data array is empty or has insufficient dimensions
-            
-        Examples
-        --------
-        >>> data = np.array([[1, 10], [2, 20], [5, 50], [6, 60]])
-        >>> result = CoordinateMixin.insert_gaps_with_nans(data, column_index=0)
-        >>> # Will insert NaN row between [2, 20] and [5, 50] if gap of 3 exceeds tolerance
+
+        Args:
+            data: Input array with shape (N, M) where N is number of rows and M is number of columns.
+            column_index: Index of the column to analyze for gaps (0-based indexing).
+            tolerance_multiplier: Multiplier for average gap to determine tolerance threshold. Defaults to 2.0.
+
+        Returns:
+            Array with NaN rows inserted where gaps exceed the tolerance.
+
+        Raises:
+            ValueError: If column_index is out of bounds for the array.
+            IndexError: If data array is empty or has insufficient dimensions.
+
+        Examples:
+            >>> data = np.array([[1, 10], [2, 20], [5, 50], [6, 60]])
+            >>> result = CoordinateMixin.insert_gaps_with_nans(data, column_index=0)
+            >>> # Will insert NaN row between [2, 20] and [5, 50] if gap of 3 exceeds tolerance
         """
         if data.size == 0:
             return data.copy()
@@ -979,21 +885,14 @@ class CoordinateMixin:
         """
         Remove skip coat areas around weld tab positions from coordinates.
 
-        Parameters
-        ----------
-        x_coords : np.ndarray
-            Array of x coordinates defining the boundary
-        y_coords : np.ndarray
-            Array of y coordinates defining the boundary
-        weld_tab_positions : np.ndarray
-            Array of x positions where weld tabs are located
-        skip_coat_width : float
-            Width of the skip coat area around each weld tab
+        Args:
+            x_coords: Array of x coordinates defining the boundary.
+            y_coords: Array of y coordinates defining the boundary.
+            weld_tab_positions: Array of x positions where weld tabs are located.
+            skip_coat_width: Width of the skip coat area around each weld tab.
 
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray]
-            Modified x and y coordinate arrays with np.nan separators between segments
+        Returns:
+            Modified x and y coordinate arrays with np.nan separators between segments.
         """
         if len(x_coords) == 0 or len(y_coords) == 0:
             return np.array([], dtype=float), np.array([], dtype=float)
