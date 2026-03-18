@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "steer-core"
 dynamic = ["version"]
-description = "Modelling energy storage from cell to site - STEER OpenCell Design"
+description = "Base utilities, mixins, and constants for the STEER OpenCell platform."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "AGPL-3.0-or-later"}
