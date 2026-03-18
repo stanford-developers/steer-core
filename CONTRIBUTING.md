@@ -78,7 +78,7 @@ Open an issue on GitHub describing:
 
 ## Contributor License Agreement (CLA)
 
-steer-core is distributed under a **dual license** (AGPL-3.0 + proprietary). To ensure
+steer-core is distributed under a **dual license** (AGPL-3.0-or-later + proprietary). To ensure
 all contributions can be distributed under both licenses, we require contributors to sign
 a **Contributor License Agreement** before their first pull request can be merged.
 
@@ -90,10 +90,10 @@ a **Contributor License Agreement** before their first pull request can be merge
    > I have read the CLA Document and I hereby sign the CLA
 4. Your signature is recorded automatically — you only need to sign once
 
-The CLA assigns copyright of your contributions to the Project Owner (Nicholas Siemons)
-and grants you back a perpetual, non-exclusive license to your own contributions. This
-is necessary to allow distribution under both the open-source (AGPL-3.0) and proprietary
-licenses. For full details, see [CLA.md](CLA.md).
+The CLA grants the maintainer a non-exclusive license to reproduce, sublicense, and
+distribute your contributions under any license — including proprietary/commercial
+licenses. This is necessary to allow distribution under both the open-source
+(AGPL-3.0-or-later) and proprietary licenses. For full details, see [CLA.md](CLA.md).
 
 ## Code of Conduct
 
@@ -104,8 +104,8 @@ By participating, you are expected to uphold this code.
 
 steer-core is dual-licensed:
 
-- **AGPL-3.0-only** — for open-source use. See [LICENSE](LICENSE).
-- **Proprietary license** — available for commercial use. Contact nsiemons@stanford.edu.
+- **AGPL-3.0-or-later** — for open-source use. See [LICENCE.txt](LICENCE.txt).
+- **Commercial license** — available for use without AGPL-3.0 copyleft requirements. Contact nsiemons@stanford.edu.
 
 By contributing, you agree to the terms of the [Contributor License Agreement](CLA.md),
-which assigns copyright to the Project Owner and enables dual licensing.
+which grants the maintainer the right to distribute contributions under both licenses.

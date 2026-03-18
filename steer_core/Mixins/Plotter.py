@@ -81,12 +81,9 @@ class PlotterMixin:
     def lighten_color(hex_color: str, factor: float) -> str:
         """Lighten *hex_color* by blending towards white.
 
-        Parameters
-        ----------
-        hex_color : str
-            Hex colour string, e.g. ``'#4C78A8'``.
-        factor : float
-            Blend factor — ``0`` returns the original colour, ``1`` returns white.
+        Args:
+            hex_color: Hex colour string, e.g. ``'#4C78A8'``.
+            factor: Blend factor — ``0`` returns the original colour, ``1`` returns white.
         """
         r, g, b = PlotterMixin.hex_to_rgb(hex_color)
         r = int(r + (255 - r) * factor)
@@ -124,30 +121,21 @@ class PlotterMixin:
             order_clockwise: str | None = None,
             gl: bool = False,
             ) -> go.Scatter | go.Scattergl | None:
-        """
-        Create a single trace for a component or group of components with NaN separators.
-        
-        Parameters
-        ----------
-        components : list or object
-            Single component or list of components to process
-        coord_attr : str
-            Attribute path for coordinates (e.g., '_a_side_coating_coordinates')
-        name : str
-            Name for the trace
-        line_width : float
-            Width of the trace line
-        color_func : callable
-            Function to get color from component
-        unit_conversion_factor : float
-            Factor to convert coordinates to desired units
-        order_clockwise : str or None, optional
-            Plane for clockwise ordering ('xy', 'xz', 'yz') or None to disable, by default None
-            
-        Returns
-        -------
-        go.Scatter or None
-            Plotly scatter trace or None if no valid coordinates
+        """Create a single trace for a component or group of components with NaN separators.
+
+        Args:
+            components: Single component or list of components to process.
+            coord_attr: Attribute path for coordinates (e.g., '_a_side_coating_coordinates').
+            name: Name for the trace.
+            line_width: Width of the trace line.
+            color_func: Function to get color from component.
+            unit_conversion_factor: Factor to convert coordinates to desired units.
+            order_clockwise: Plane for clockwise ordering ('xy', 'xz', 'yz') or None to disable,
+                by default None.
+            gl: Whether to use WebGL rendering.
+
+        Returns:
+            Plotly scatter trace or None if no valid coordinates.
         """
         # Convert single component to list for uniform processing
         if not isinstance(components, list):
@@ -216,28 +204,19 @@ class PlotterMixin:
         colorway: list[str] = None,
         **kwargs,
     ) -> go.Figure:
-        """
-        Create a sunburst plot for any generic nested breakdown dictionary.
+        """Create a sunburst plot for any generic nested breakdown dictionary.
 
-        Parameters
-        ----------
-        breakdown_dict : dict[str, Any]
-            Nested dictionary where values can be either numbers or nested dictionaries.
-            Each nesting level becomes a ring in the sunburst plot.
-        title : str, optional
-            Title for the plot. Defaults to "Breakdown".
-        root_label : str, optional
-            Label for the root node. Defaults to "Total".
-        unit : str, optional
-            Unit string to display in hover text (e.g., "g", "kg", "%"). Defaults to "".
-        colorway : list[str], optional
-            List of colors to use for the inner ring. If None, uses Plotly's default colorway.
-            Defaults to None.
+        Args:
+            breakdown_dict: Nested dictionary where values can be either numbers or nested
+                dictionaries. Each nesting level becomes a ring in the sunburst plot.
+            title: Title for the plot. Defaults to "Breakdown".
+            root_label: Label for the root node. Defaults to "Total".
+            unit: Unit string to display in hover text (e.g., "g", "kg", "%"). Defaults to "".
+            colorway: List of colors to use for the inner ring. If None, uses Plotly's default
+                colorway. Defaults to None.
 
-        Returns
-        -------
-        go.Figure
-            Plotly sunburst figure
+        Returns:
+            Plotly sunburst figure.
         """
         
         # Default Plotly colorway if none provided
@@ -429,30 +408,20 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a styled 2-D scatter plot.
 
-        Parameters
-        ----------
-        df : pd.DataFrame
-            DataFrame containing the columns referenced by *x*, *y*, etc.
-        x, y : str
-            Column names for the X and Y axes.
-        hover_name : str, optional
-            Column whose values appear as the main hover label.
-        custom_data : list of str, optional
-            Column names to include in ``customdata`` for click handlers.
-        color : str, optional
-            Column name for colour grouping.
-        size : str, optional
-            Column name for marker-size mapping.
-        size_max : int
-            Maximum marker size when *size* is set.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            df: DataFrame containing the columns referenced by *x*, *y*, etc.
+            x: Column name for the X axis.
+            y: Column name for the Y axis.
+            hover_name: Column whose values appear as the main hover label.
+            custom_data: Column names to include in ``customdata`` for click handlers.
+            color: Column name for colour grouping.
+            size: Column name for marker-size mapping.
+            size_max: Maximum marker size when *size* is set.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         fig = px.scatter(
             df,
@@ -484,26 +453,19 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a scatter plot of group means with std dev error bars.
 
-        Parameters
-        ----------
-        groups : array-like
-            Parallel list of group labels (one per observation).
-        x_values, y_values : array-like
-            Parallel lists of numeric values.
-        x_label, y_label : str
-            Human-readable axis labels.
-        group_label : str
-            Human-readable label for the grouping variable.
-        palette : list of str, optional
-            Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            groups: Parallel list of group labels (one per observation).
+            x_values: Parallel list of numeric X values.
+            y_values: Parallel list of numeric Y values.
+            x_label: Human-readable X-axis label.
+            y_label: Human-readable Y-axis label.
+            group_label: Human-readable label for the grouping variable.
+            palette: Hex colour palette. Falls back to ``DEFAULT_PALETTE``.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         palette = palette or PlotterMixin.DEFAULT_PALETTE
         df = pd.DataFrame({"_group": groups, "_x": x_values, "_y": y_values})
@@ -558,30 +520,21 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a styled 3-D scatter plot.
 
-        Parameters
-        ----------
-        df : pd.DataFrame
-            DataFrame containing the columns referenced by *x*, *y*, *z*, etc.
-        x, y, z : str
-            Column names for the three axes.
-        hover_name : str, optional
-            Column whose values appear as the main hover label.
-        custom_data : list of str, optional
-            Column names to include in ``customdata``.
-        color : str, optional
-            Column name for colour grouping.
-        size : str, optional
-            Column name for marker-size mapping.
-        size_max : int
-            Maximum marker size when *size* is set.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            df: DataFrame containing the columns referenced by *x*, *y*, *z*, etc.
+            x: Column name for the X axis.
+            y: Column name for the Y axis.
+            z: Column name for the Z axis.
+            hover_name: Column whose values appear as the main hover label.
+            custom_data: Column names to include in ``customdata``.
+            color: Column name for colour grouping.
+            size: Column name for marker-size mapping.
+            size_max: Maximum marker size when *size* is set.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         fig = px.scatter_3d(
             df,
@@ -622,26 +575,21 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a 3-D scatter plot of group means with std dev error bars.
 
-        Parameters
-        ----------
-        groups : array-like
-            Parallel list of group labels.
-        x_values, y_values, z_values : array-like
-            Parallel lists of numeric values.
-        x_label, y_label, z_label : str
-            Human-readable axis labels.
-        group_label : str
-            Human-readable label for the grouping variable.
-        palette : list of str, optional
-            Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            groups: Parallel list of group labels.
+            x_values: Parallel list of numeric X values.
+            y_values: Parallel list of numeric Y values.
+            z_values: Parallel list of numeric Z values.
+            x_label: Human-readable X-axis label.
+            y_label: Human-readable Y-axis label.
+            z_label: Human-readable Z-axis label.
+            group_label: Human-readable label for the grouping variable.
+            palette: Hex colour palette. Falls back to ``DEFAULT_PALETTE``.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         palette = palette or PlotterMixin.DEFAULT_PALETTE
         df = pd.DataFrame({
@@ -701,22 +649,17 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a styled bar chart.
 
-        Parameters
-        ----------
-        x, y : array-like
-            Values for the X and Y axes.
-        custom_data : array-like, optional
-            Custom data attached to each bar (for click handlers).
-        x_label, y_label : str
-            Human-readable axis labels.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            x: Values for the X axis.
+            y: Values for the Y axis.
+            custom_data: Custom data attached to each bar (for click handlers).
+            x_label: Human-readable X-axis label.
+            y_label: Human-readable Y-axis label.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         fig = px.bar(
             x=x,
@@ -741,26 +684,17 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a bar chart showing mean +/- std dev per group.
 
-        Parameters
-        ----------
-        groups : array-like
-            Parallel list of group labels (one per observation).
-        values : array-like
-            Parallel list of numeric values (one per observation).
-        y_label : str
-            Human-readable Y-axis label.
-        group_label : str
-            Human-readable X-axis (group axis) label.
-        palette : list of str, optional
-            Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            groups: Parallel list of group labels (one per observation).
+            values: Parallel list of numeric values (one per observation).
+            y_label: Human-readable Y-axis label.
+            group_label: Human-readable X-axis (group axis) label.
+            palette: Hex colour palette. Falls back to ``DEFAULT_PALETTE``.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         palette = palette or PlotterMixin.DEFAULT_PALETTE
         df = pd.DataFrame({"_group": groups, "_value": values})
@@ -801,20 +735,14 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a styled histogram.
 
-        Parameters
-        ----------
-        x : array-like
-            Values to bin.
-        x_label : str
-            Human-readable axis label.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            x: Values to bin.
+            x_label: Human-readable axis label.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         fig = px.histogram(
             x=x,
@@ -836,24 +764,16 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create overlaid histograms, one per group.
 
-        Parameters
-        ----------
-        groups : array-like
-            Parallel list of group labels.
-        values : array-like
-            Parallel list of numeric values.
-        x_label : str
-            Human-readable axis label.
-        palette : list of str, optional
-            Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            groups: Parallel list of group labels.
+            values: Parallel list of numeric values.
+            x_label: Human-readable axis label.
+            palette: Hex colour palette. Falls back to ``DEFAULT_PALETTE``.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         palette = palette or PlotterMixin.DEFAULT_PALETTE
         df = pd.DataFrame({"_group": groups, "_value": values})
@@ -885,22 +805,15 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a probability-density histogram (one trace per colour group).
 
-        Parameters
-        ----------
-        values : array-like
-            Values to bin (used when *color_groups* is ``None``).
-        label : str
-            Human-readable axis label.
-        color_groups : dict, optional
-            Mapping ``{group_name: [values]}`` for overlaid per-group traces.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            values: Values to bin (used when *color_groups* is ``None``).
+            label: Human-readable axis label.
+            color_groups: Mapping ``{group_name: [values]}`` for overlaid per-group traces.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         fig = go.Figure()
         if color_groups:
@@ -940,24 +853,16 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create overlaid probability-density histograms, one per group.
 
-        Parameters
-        ----------
-        groups : array-like
-            Parallel list of group labels.
-        values : array-like
-            Parallel list of numeric values.
-        label : str
-            Human-readable axis label.
-        palette : list of str, optional
-            Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            groups: Parallel list of group labels.
+            values: Parallel list of numeric values.
+            label: Human-readable axis label.
+            palette: Hex colour palette. Falls back to ``DEFAULT_PALETTE``.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         palette = palette or PlotterMixin.DEFAULT_PALETTE
         df = pd.DataFrame({"_group": groups, "_value": values})
@@ -993,26 +898,17 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a styled box plot.
 
-        Parameters
-        ----------
-        y : array-like
-            Values for the Y axis.
-        x : array-like, optional
-            Category values for grouping along the X axis.
-        custom_data : array-like, optional
-            Custom data attached to each point (for click handlers).
-        y_label : str
-            Human-readable Y-axis label.
-        points : str
-            One of ``'all'``, ``'outliers'``, ``'suspectedoutliers'``, or ``False``.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            y: Values for the Y axis.
+            x: Category values for grouping along the X axis.
+            custom_data: Custom data attached to each point (for click handlers).
+            y_label: Human-readable Y-axis label.
+            points: One of ``'all'``, ``'outliers'``, ``'suspectedoutliers'``, or ``False``.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         box_kwargs: dict = dict(
             y=y,
@@ -1043,28 +939,18 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a styled violin plot.
 
-        Parameters
-        ----------
-        y : array-like
-            Values for the Y axis.
-        x : array-like, optional
-            Category values for grouping along the X axis.
-        custom_data : array-like, optional
-            Custom data attached to each point.
-        y_label : str
-            Human-readable Y-axis label.
-        points : str
-            One of ``'all'``, ``'outliers'``, ``'suspectedoutliers'``, or ``False``.
-        box : bool
-            Whether to overlay an inner box-plot.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            y: Values for the Y axis.
+            x: Category values for grouping along the X axis.
+            custom_data: Custom data attached to each point.
+            y_label: Human-readable Y-axis label.
+            points: One of ``'all'``, ``'outliers'``, ``'suspectedoutliers'``, or ``False``.
+            box: Whether to overlay an inner box-plot.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         violin_kwargs: dict = dict(
             y=y,
@@ -1095,26 +981,17 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create a styled strip (jitter) plot.
 
-        Parameters
-        ----------
-        y : array-like
-            Values for the Y axis.
-        x : array-like, optional
-            Category values for grouping along the X axis.
-        hover_name : array-like, optional
-            Values to display as the main hover label.
-        custom_data : array-like, optional
-            Custom data attached to each point.
-        y_label : str
-            Human-readable Y-axis label.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            y: Values for the Y axis.
+            x: Category values for grouping along the X axis.
+            hover_name: Values to display as the main hover label.
+            custom_data: Custom data attached to each point.
+            y_label: Human-readable Y-axis label.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         strip_kwargs: dict = dict(
             y=y,
@@ -1151,31 +1028,21 @@ class PlotterMixin:
         normalised to 0–1 per axis so properties with very different scales
         are comparable.  Per-spoke tick annotations show the original values.
 
-        Parameters
-        ----------
-        df : pd.DataFrame
-            Must contain columns named in *axis_labels* (raw values) and
-            *name_column*.  Optionally contains *color_column*.
-        axis_labels : list of str
-            Column names in *df* for the radar axes.
-        inverted : dict, optional
-            ``{axis_label: True}`` for axes where *lower* raw values should
-            appear *further* from the centre (e.g. cost).  Defaults to
-            inverting any axis whose label contains ``"cost"`` (case-insensitive).
-        color_column : str, optional
-            Column name for categorical colour grouping.
-        name_column : str
-            Column name used as the trace name / hover label.
-        palette : list of str, optional
-            Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            df: Must contain columns named in *axis_labels* (raw values) and
+                *name_column*.  Optionally contains *color_column*.
+            axis_labels: Column names in *df* for the radar axes.
+            inverted: ``{axis_label: True}`` for axes where *lower* raw values should
+                appear *further* from the centre (e.g. cost).  Defaults to
+                inverting any axis whose label contains ``"cost"`` (case-insensitive).
+            color_column: Column name for categorical colour grouping.
+            name_column: Column name used as the trace name / hover label.
+            palette: Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         palette = palette or PlotterMixin.DEFAULT_PALETTE
 
@@ -1343,27 +1210,18 @@ class PlotterMixin:
         Rows are grouped by *group_column*; each group becomes a trace
         showing the per-axis mean.  A lighter shaded band shows +/- 1 std dev.
 
-        Parameters
-        ----------
-        df : pd.DataFrame
-            Must contain columns named in *axis_labels* and *group_column*.
-        axis_labels : list of str
-            Column names in *df* for the radar axes.
-        group_column : str
-            Column name used for grouping.
-        inverted : dict, optional
-            ``{axis_label: True}`` for axes where lower is better.
-            Defaults to inverting any axis whose label contains ``"cost"``.
-        palette : list of str, optional
-            Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            df: Must contain columns named in *axis_labels* and *group_column*.
+            axis_labels: Column names in *df* for the radar axes.
+            group_column: Column name used for grouping.
+            inverted: ``{axis_label: True}`` for axes where lower is better.
+                Defaults to inverting any axis whose label contains ``"cost"``.
+            palette: Hex colour palette.  Falls back to ``DEFAULT_PALETTE``.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         palette = palette or PlotterMixin.DEFAULT_PALETTE
 
@@ -1527,20 +1385,14 @@ class PlotterMixin:
     ) -> go.Figure:
         """Create an annotated Pearson correlation heatmap.
 
-        Parameters
-        ----------
-        df : pd.DataFrame
-            DataFrame containing at least *axis_labels* as numeric columns.
-        axis_labels : list of str
-            Column names to include in the correlation matrix.
-        template : str
-            Plotly template name.
-        layout_defaults : dict, optional
-            Additional ``fig.update_layout`` overrides applied last.
+        Args:
+            df: DataFrame containing at least *axis_labels* as numeric columns.
+            axis_labels: Column names to include in the correlation matrix.
+            template: Plotly template name.
+            layout_defaults: Additional ``fig.update_layout`` overrides applied last.
 
-        Returns
-        -------
-        go.Figure
+        Returns:
+            Plotly figure.
         """
         import numpy as np
 
