@@ -17,9 +17,6 @@ from steer_core.Data.DataManager import (
     DataManagerError,
     ForbiddenError,
     NotFoundError,
-    MATERIAL_TABLES,
-    CELL_TABLES,
-    ALL_TABLES,
 )
 
 # Register domain tables for tests (normally done by steer_opencell_design)
