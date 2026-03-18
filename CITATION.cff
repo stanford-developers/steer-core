@@ -7,10 +7,12 @@ authors:
     given-names: Nicholas
     email: nsiemons@stanford.edu
     affiliation: Stanford University
-version: "0.2.11"
+    orcid: https://orcid.org/0000-0002-0755-3981
+version: "0.2.12"
 date-released: "2026-03-17"
 license: AGPL-3.0-or-later
 repository-code: "https://github.com/stanford-developers/steer-core"
+doi: 
 keywords:
   - energy
   - storage
