@@ -8,12 +8,9 @@ import os
 import re
 import time
 import urllib.parse
-from pathlib import Path
 
 import pandas as pd
 import requests
-
-from steer_core.Constants.Units import H_TO_S, mA_TO_A, G_TO_KG
 
 logger = logging.getLogger("steer_core.DataManager")
 logger.setLevel(logging.DEBUG)
@@ -21,34 +18,6 @@ if not logger.handlers:
     _handler = logging.StreamHandler()
     _handler.setFormatter(logging.Formatter("[%(name)s] %(message)s"))
     logger.addHandler(_handler)
-
-MATERIAL_TABLES = {
-    "anode_materials",
-    "cathode_materials",
-    "binder_materials",
-    "conductive_additive_materials",
-    "current_collector_materials",
-    "insulation_materials",
-    "separator_materials",
-    "tape_materials",
-    "prismatic_container_materials",
-}
-
-CELL_TABLES = {"cell_references", "teardowns", "user_designs", "cell_submissions"}
-
-ALL_TABLES = MATERIAL_TABLES | CELL_TABLES
-
-_MATERIAL_META_COLS = ["name", "date", "version", "reference"]
-_CELL_META_COLS = [
-    "name",
-    "form_factor",
-    "internal_construction",
-    "date_created",
-    "version",
-    "chemistry",
-    "visibility",
-    "owner_id",
-]
 
 class DataManagerError(Exception):
     """Base exception for DataManager errors."""
@@ -69,13 +38,54 @@ class ConflictError(DataManagerError):
     """409 — name already taken."""
 
 class DataManager:
-    """Drop-in replacement for the SQLite-based DataManager.
+    """Generic REST client for the OpenCell API.
 
-    Talks to the OpenCell REST API (Lambda) instead of a local database.
-    All existing ``from_database()`` call sites work without changes.
+    Provides low-level ``get_data``, ``insert_data``, and ``remove_data``
+    operations.  Domain-specific convenience methods (material getters,
+    cell fork/publish) should live in a subclass (see
+    ``steer_opencell_design.Data.OpenCellDataManager``).
+
+    Table classification (materials vs cells endpoint routing) is driven
+    by :meth:`register_tables`.  Call it once at application startup to
+    map table names to resource types.
     """
 
     _token: str | None = None
+    _material_tables: set[str] = set()
+    _cell_tables: set[str] = set()
+    _material_meta_cols: list[str] = []
+    _cell_meta_cols: list[str] = []
+
+    @classmethod
+    def register_tables(
+        cls,
+        material_tables: set[str],
+        cell_tables: set[str],
+        material_meta_cols: list[str] | None = None,
+        cell_meta_cols: list[str] | None = None,
+    ) -> None:
+        """Register domain-specific table names and metadata columns.
+
+        Must be called before any ``get_data`` / ``insert_data`` calls
+        so that url routing (``/materials/…`` vs ``/cells/…``) works.
+
+        Parameters
+        ----------
+        material_tables : set[str]
+            Table names whose API path is ``/materials/{table}``.
+        cell_tables : set[str]
+            Table names whose API path is ``/cells/{table}``.
+        material_meta_cols : list[str], optional
+            Columns returned for material listings.
+        cell_meta_cols : list[str], optional
+            Columns returned for cell listings.
+        """
+        cls._material_tables = material_tables
+        cls._cell_tables = cell_tables
+        if material_meta_cols is not None:
+            cls._material_meta_cols = material_meta_cols
+        if cell_meta_cols is not None:
+            cls._cell_meta_cols = cell_meta_cols
 
     def __init__(self, jwt_token: str | None = None):
         self._api_url = os.environ.get("API_URL")
@@ -122,14 +132,17 @@ class DataManager:
             )
         return headers
 
-    @staticmethod
-    def _classify_table(table_name: str) -> str:
+    @classmethod
+    def _classify_table(cls, table_name: str) -> str:
         """Return ``'materials'`` or ``'cells'`` based on *table_name*."""
-        if table_name in MATERIAL_TABLES:
+        if table_name in cls._material_tables:
             return "materials"
-        if table_name in CELL_TABLES:
+        if table_name in cls._cell_tables:
             return "cells"
-        raise ValueError(f"Unknown table: {table_name}")
+        raise ValueError(
+            f"Unknown table: {table_name!r}. "
+            "Call DataManager.register_tables() first to register domain tables."
+        )
 
     @staticmethod
     def _parse_condition(condition: str) -> tuple[str, str]:
@@ -320,51 +333,7 @@ class DataManager:
         return result
 
     def get_table_names(self) -> list[str]:
-        return sorted(ALL_TABLES)
-
-    # -- Material-specific getters -----------------------------------------
-
-    def _get_materials(self, table_name: str, most_recent: bool = True) -> pd.DataFrame:
-        params = {}
-        if not most_recent:
-            params["most_recent"] = "false"
-        data = self._request(
-            "GET", f"/materials/{table_name}", auth_required=False, params=params
-        )
-        items = data.get("items", [])
-        if not items:
-            return pd.DataFrame(columns=_MATERIAL_META_COLS)
-        df = pd.DataFrame(items)
-        # Keep only the standard metadata columns (in order)
-        available = [c for c in _MATERIAL_META_COLS if c in df.columns]
-        return df[available].reset_index(drop=True)
-
-    def get_current_collector_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("current_collector_materials", most_recent)
-
-    def get_insulation_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("insulation_materials", most_recent)
-
-    def get_cathode_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("cathode_materials", most_recent)
-
-    def get_anode_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("anode_materials", most_recent)
-
-    def get_binder_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("binder_materials", most_recent)
-
-    def get_conductive_additive_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("conductive_additive_materials", most_recent)
-
-    def get_separator_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("separator_materials", most_recent)
-
-    def get_tape_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("tape_materials", most_recent)
-
-    def get_prismatic_container_materials(self, most_recent: bool = True) -> pd.DataFrame:
-        return self._get_materials("prismatic_container_materials", most_recent)
+        return sorted(self._material_tables | self._cell_tables)
 
     # -- Write operations --------------------------------------------------
 
@@ -424,131 +393,3 @@ class DataManager:
 
     def drop_table(self, table_name: str):
         raise NotImplementedError("drop_table() is not supported by the REST API")
-
-    # -- New operations (fork / publish / name check) ----------------------
-
-    def fork_cell(self, source_table: str, source_name: str, new_name: str) -> dict:
-        """Fork *source_name* into ``user_designs`` with *new_name*.
-
-        Returns the new cell metadata dict.  Raises ``ConflictError`` if
-        *new_name* is already taken.
-        """
-        encoded = self._encode(source_name)
-        return self._request(
-            "POST",
-            f"/cells/{source_table}/{encoded}/fork",
-            auth_required=True,
-            json={"name": new_name},
-        )
-
-    def publish_cell(
-        self,
-        source_table: str,
-        source_name: str,
-        new_name: str,
-        target_table: str | None = None,
-    ) -> dict:
-        """Publish *source_name* with *new_name*.
-
-        Admin only.  Raises ``ConflictError`` if *new_name* is taken.
-
-        Parameters
-        ----------
-        target_table : str, optional
-            Destination table (``"cell_references"`` or ``"teardowns"``).
-            Defaults to ``"cell_references"`` on the server side.
-        """
-        encoded = self._encode(source_name)
-        body: dict = {"name": new_name}
-        if target_table:
-            body["target_table"] = target_table
-        return self._request(
-            "POST",
-            f"/cells/{source_table}/{encoded}/publish",
-            auth_required=True,
-            json=body,
-        )
-
-    def submit_cell(self, source_table: str, source_name: str) -> dict:
-        """Submit a cell from *source_table* for admin review.
-
-        Copies the cell to ``cell_submissions``.  Only the owner (non-admin)
-        can submit.  Returns the new submission metadata.
-        """
-        encoded = self._encode(source_name)
-        return self._request(
-            "POST",
-            f"/cells/{source_table}/{encoded}/submit",
-            auth_required=True,
-        )
-
-    def reject_cell(self, table_name: str, name: str) -> None:
-        """Reject (hard-delete) a submission from *table_name*.
-
-        Admin only.  The DynamoDB item and S3 object are permanently removed.
-        """
-        encoded = self._encode(name)
-        self._request(
-            "POST",
-            f"/cells/{table_name}/{encoded}/reject",
-            auth_required=True,
-        )
-
-    def check_name_available(self, name: str) -> bool:
-        """Return ``True`` if *name* is available across all cell tables."""
-        encoded = self._encode(name)
-        data = self._request("GET", f"/cells/check-name/{encoded}", auth_required=False)
-        return data.get("available", False)
-
-    # -- Static utility (kept from SQLite DataManager) ---------------------
-    # steer-opencell-data/steer_opencell_data/DataManager.py
-    @staticmethod
-    def read_half_cell_curve(half_cell_path: str | Path) -> pd.DataFrame:
-        """Read a half-cell voltage curve from a local CSV file.
-
-        Parameters
-        ----------
-        half_cell_path : str or Path
-            Path to the CSV file.
-
-        Returns
-        -------
-        pd.DataFrame
-            Columns: specific_capacity, voltage, step_id.
-        """
-        try:
-            data = pd.read_csv(half_cell_path)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Could not find the file at {half_cell_path}")
-        except Exception as e:
-            raise ValueError(f"Error reading file at {half_cell_path}: {str(e)}")
-
-        if "Specific Capacity (mAh/g)" not in data.columns:
-            raise ValueError(
-                "The file must have a column named 'Specific Capacity (mAh/g)'"
-            )
-        if "Voltage (V)" not in data.columns:
-            raise ValueError("The file must have a column named 'Voltage (V)'")
-        if "Step_ID" not in data.columns:
-            raise ValueError("The file must have a column named 'Step_ID'")
-
-        data = (
-            data.rename(
-                columns={
-                    "Specific Capacity (mAh/g)": "specific_capacity",
-                    "Voltage (V)": "voltage",
-                    "Step_ID": "step_id",
-                }
-            )
-            .assign(
-                specific_capacity=lambda x: x["specific_capacity"]
-                * (H_TO_S * mA_TO_A / G_TO_KG)
-            )
-            .filter(["specific_capacity", "voltage", "step_id"])
-            .groupby(["specific_capacity", "step_id"], group_keys=False)["voltage"]
-            .max()
-            .reset_index()
-            .sort_values(["step_id", "specific_capacity"])
-        )
-
-        return data

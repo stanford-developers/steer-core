@@ -18,34 +18,30 @@ def propagating_setter(attr_name: str = None, deepcopy: bool = False):
     2. Optionally creates a deep copy of the value (for storing copies)
     3. Sets the new child's parent reference with the attribute name
     
-    Parameters
-    ----------
-    attr_name : str, optional
-        The attribute name to use for propagation. If not provided,
-        the decorator will derive it from the setter's name.
-    deepcopy : bool, default False
-        If True, creates a deep copy of the value before passing to the setter.
-        Useful when you want to store a copy rather than the original.
-        During propagation (re-assignment of the same stored object), no copy
-        is made to avoid unnecessary duplication.
+    Args:
+        attr_name: The attribute name to use for propagation. If not provided,
+            the decorator will derive it from the setter's name.
+        deepcopy: If True, creates a deep copy of the value before passing to the setter.
+            Useful when you want to store a copy rather than the original.
+            During propagation (re-assignment of the same stored object), no copy
+            is made to avoid unnecessary duplication.
     
-    Example Usage
-    -------------
+    Example Usage:
     # Standard usage (no copy):
-    @formulation.setter
+    @component.setter
     @calculate_all_properties
     @propagating_setter()
-    def formulation(self, formulation: _ElectrodeFormulation):
-        self.validate_type(formulation, _ElectrodeFormulation, "formulation")
-        self._formulation = formulation
+    def component(self, component: _Component):
+        self.validate_type(component, _Component, "component")
+        self._component = component
     
     # With deepcopy (stores a copy):
-    @insulation_material.setter
+    @material.setter
     @calculate_bulk_properties
     @propagating_setter(deepcopy=True)
-    def insulation_material(self, insulation_material: InsulationMaterial | None):
-        self.validate_type(insulation_material, InsulationMaterial, "insulation material")
-        self._insulation_material = insulation_material  # This is already a copy
+    def material(self, material: Material | None):
+        self.validate_type(material, Material, "material")
+        self._material = material  # This is already a copy
     """
     def decorator(func):
         @wraps(func)
@@ -101,23 +97,21 @@ class PropagationMixin:
     
     Python's cyclic garbage collector handles any circular references.
     
-    Serialization Note
-    ------------------
-    The `_parent` reference is skipped during serialization to avoid circular
-    serialization. Parent references are re-established when objects are 
-    reassembled after deserialization (via setters that call `_set_parent`).
+    Serialization Note:
+        The `_parent` reference is skipped during serialization to avoid circular
+        serialization. Parent references are re-established when objects are 
+        reassembled after deserialization (via setters that call `_set_parent`).
     
-    Example Usage
-    -------------
+    Example Usage:
     # Change property at any depth:
-    cell.reference_assembly.layout.cathode.current_collector.thickness = new_value
+    root.assembly.layout.child.sub_component.thickness = new_value
     
     # Option 1: Update current level by triggering parent's setter
-    cell.reference_assembly.layout.cathode.current_collector.update()
-    # Equivalent to: a.b.c.current_collector = a.b.c.current_collector
+    root.assembly.layout.child.sub_component.update()
+    # Equivalent to: a.b.c.sub_component = a.b.c.sub_component
     
     # Option 2: Propagate changes all the way to root (triggers all parent setters)
-    cell.reference_assembly.layout.cathode.current_collector.propagate_changes()
+    root.assembly.layout.child.sub_component.propagate_changes()
     # Equivalent to re-assigning at each level up to root
     """
     
@@ -137,15 +131,12 @@ class PropagationMixin:
         """
         Set the parent reference for this object.
         
-        Parameters
-        ----------
-        parent : Optional[Any]
-            The parent object, or None to clear the parent reference.
-        attr_name : Optional[str]
-            The attribute name on the parent that holds this object.
-            Used during propagation to re-assign via the parent's setter.
-            If not provided, propagation will fall back to calling
-            parent.propagate_changes() directly.
+        Args:
+            parent: The parent object, or None to clear the parent reference.
+            attr_name: The attribute name on the parent that holds this object.
+                Used during propagation to re-assign via the parent's setter.
+                If not provided, propagation will fall back to calling
+                parent.propagate_changes() directly.
         """
         self._parent = parent
         self._parent_attr_name = attr_name if parent is not None else None
@@ -154,9 +145,7 @@ class PropagationMixin:
         """
         Get the parent object if set.
         
-        Returns
-        -------
-        Optional[Any]
+        Returns:
             The parent object, or None if no parent is set.
         """
         return self._parent
@@ -196,16 +185,14 @@ class PropagationMixin:
         Use this when setting multiple properties at once to avoid redundant
         recalculations that would otherwise occur after each property change.
 
-        Examples
-        --------
-        >>> with obj.batch_updates():
-        ...     obj.property_a = value_a
-        ...     obj.property_b = value_b
-        # Single recalculation happens here
+        Examples:
+            >>> with obj.batch_updates():
+            ...     obj.property_a = value_a
+            ...     obj.property_b = value_b
+            # Single recalculation happens here
 
-        Yields
-        ------
-        None
+        Yields:
+            None
         """
         original_update_flag = getattr(self, '_update_properties', True)
         self._update_properties = False
@@ -281,13 +268,10 @@ class PropagationMixin:
         child objects to re-establish parent references that were lost
         during serialization.
         
-        Parameters
-        ----------
-        data : dict
-            Dictionary representation to reconstruct from.
+        Args:
+            data: Dictionary representation to reconstruct from.
             
-        Returns
-        -------
+        Returns:
             Reconstructed object instance with parent references restored.
         """
         # Chain to SerializerMixin's _from_dict
@@ -331,13 +315,10 @@ class PropagationMixin:
         """
         Recursively set parent references on a value and its contents.
         
-        Parameters
-        ----------
-        value : Any
-            The value to set parent references on.
-        attr_name : Optional[str]
-            The attribute name on this object that holds the value.
-            Used for setter-based propagation.
+        Args:
+            value: The value to set parent references on.
+            attr_name: The attribute name on this object that holds the value.
+                Used for setter-based propagation.
         """
         if hasattr(value, '_set_parent'):
             value._set_parent(self, attr_name)

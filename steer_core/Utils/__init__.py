@@ -7,6 +7,27 @@ from typing import Any
 
 import numpy as np
 
+from steer_core.Utils.CurveProcessing import (  # noqa: F401
+    correct_segment_directions,
+    make_segments_monotonic,
+    reverse_secondary_segment,
+    prepend_primary_endpoint_to_secondary,
+    scale_secondary_segment,
+    scale_curve,
+    interpolate_between_curves,
+    interpolate_curve_at_target,
+    prepare_arrays_for_interp,
+    truncate_and_shift_segments,
+)
+from steer_core.Utils.CurveComposition import (  # noqa: F401
+    build_zero_value_proxy,
+    compute_paired_curve_difference,
+    DEFAULT_INTERPOLATION_POINTS,
+)
+from steer_core.Utils.ControlModes import (  # noqa: F401
+    dispatch_dependent_update,
+)
+
 
 def is_plotly_trace(obj: object) -> bool:
     """Return ``True`` if *obj* is a Plotly trace object."""
@@ -22,18 +43,12 @@ def round_dict_recursive(
 ) -> Any:
     """Recursively round values in a nested dictionary.
 
-    Parameters
-    ----------
-    obj : Any
-        Dictionary or numeric value to round.
-    precision : int, optional
-        Number of decimal places, by default 2.
-    unit_conversion : float, optional
-        Multiplicative factor applied before rounding, by default 1.0.
+    Args:
+        obj: Dictionary or numeric value to round.
+        precision: Number of decimal places, by default 2.
+        unit_conversion: Multiplicative factor applied before rounding, by default 1.0.
 
-    Returns
-    -------
-    Any
+    Returns:
         Rounded dictionary or value.
     """
     if isinstance(obj, dict):

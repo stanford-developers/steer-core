@@ -40,14 +40,10 @@ class SerializerMixin:
         """
         Serialize object using MessagePack with numpy support.
 
-        Parameters
-        ----------
-        compress : bool, optional
-            Whether to compress the serialized data (default: True)
+        Args:
+            compress: Whether to compress the serialized data (default: True).
 
-        Returns
-        -------
-        bytes
+        Returns:
             The serialized byte representation of the object.
         """
         # Include class information for proper deserialization
@@ -67,15 +63,11 @@ class SerializerMixin:
         """
         Recursively serialize a value, handling nested structures.
         Optimized with type-based dispatch for common types.
-        
-        Parameters
-        ----------
-        value : Any
-            The value to serialize.
-            
-        Returns
-        -------
-        Any
+
+        Args:
+            value: The value to serialize.
+
+        Returns:
             The serialized representation.
         """
         # Fast path: check type directly for common cases
@@ -141,14 +133,10 @@ class SerializerMixin:
         Stores columns as numpy arrays to leverage msgpack_numpy for
         efficient dtype-preserving serialization.
 
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            The DataFrame to serialize.
+        Args:
+            df: The DataFrame to serialize.
 
-        Returns
-        -------
-        dict
+        Returns:
             Dictionary with '__dataframe__' marker and column/index data.
         """
         result = {
@@ -170,15 +158,11 @@ class SerializerMixin:
     def _serialize_dict(self, d: dict) -> dict:
         """
         Serialize dictionary in single pass, detecting object keys/values during iteration.
-        
-        Parameters
-        ----------
-        d : dict
-            Dictionary to serialize.
-            
-        Returns
-        -------
-        dict
+
+        Args:
+            d: Dictionary to serialize.
+
+        Returns:
             Serialized dictionary representation.
         """
         if not d:
@@ -214,10 +198,8 @@ class SerializerMixin:
         Convert object to dictionary for serialization.
         Override this in subclasses to customize serialization behavior.
         Single-pass implementation for efficiency.
-        
-        Returns
-        -------
-        dict
+
+        Returns:
             Dictionary representation of the object.
         """
         result = {}
@@ -238,14 +220,10 @@ class SerializerMixin:
         Automatically detects and decompresses if needed.
         Supports both LZ4 (new) and zlib (legacy) compression.
 
-        Parameters
-        ----------
-        data : bytes
-            The byte data to deserialize.
+        Args:
+            data: The byte data to deserialize.
 
-        Returns
-        -------
-        T
+        Returns:
             Instance of the class.
         """
         # Check compression marker and decompress accordingly
@@ -275,15 +253,11 @@ class SerializerMixin:
         """
         Recursively deserialize a value, handling nested structures.
         Optimized with cached module lookups.
-        
-        Parameters
-        ----------
-        value : Any
-            The value to deserialize.
-            
-        Returns
-        -------
-        Any
+
+        Args:
+            value: The value to deserialize.
+
+        Returns:
             The deserialized object.
         """
         # Fast path for non-dict/list types
@@ -346,15 +320,11 @@ class SerializerMixin:
         """
         Reconstruct object from dictionary.
         Override in subclasses for custom deserialization.
-        
-        Parameters
-        ----------
-        data : dict
-            Dictionary representation to reconstruct from.
-            
-        Returns
-        -------
-        T
+
+        Args:
+            data: Dictionary representation to reconstruct from.
+
+        Returns:
             Reconstructed object instance.
         """
         obj = cls.__new__(cls)
@@ -381,25 +351,17 @@ class SerializerMixin:
           ``steer_core.Data.DataManager``. Requires the ``API_URL`` env var
           pointing to the deployed Lambda endpoint.
 
-        Parameters
-        ----------
-        name : str
-            Name of the object to retrieve.
-        table_name : str, optional
-            Specific table to search. If provided, '_table_name' is not required.
-            If None, uses class's _table_name.
+        Args:
+            name: Name of the object to retrieve.
+            table_name: Specific table to search. If provided, '_table_name' is not required.
+                If None, uses class's _table_name.
 
-        Returns
-        -------
-        T
+        Returns:
             Instance of the class.
 
-        Raises
-        ------
-        NotImplementedError
-            If the subclass doesn't define '_table_name' and table_name is not provided.
-        ValueError
-            If the object name is not found in any of the tables.
+        Raises:
+            NotImplementedError: If the subclass doesn't define '_table_name' and table_name is not provided.
+            ValueError: If the object name is not found in any of the tables.
         """
         from steer_core.Data import is_development
         _dev_mode = is_development()

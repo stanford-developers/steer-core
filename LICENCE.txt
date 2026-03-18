@@ -1,11 +1,22 @@
-GNU AFFERO GENERAL PUBLIC LICENSE
-Version 3, 19 November 2007
+steer-core - Dual Licensed
 
-Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
-Everyone is permitted to copy and distribute verbatim copies
-of this license document, but changing it is not allowed.
+Copyright (c) 2024-2026 Nicholas Siemons
 
-Copyright (c) 2026 Nicholas Siemons
+1. Open-source license: GNU Affero General Public License v3.0 (AGPL-3.0)
+   See the full AGPL-3.0 license text below.
+
+2. Commercial/proprietary license: A separate commercial license is available
+   for use without AGPL-3.0 copyleft requirements.
+   Contact nsiemons@stanford.edu for details.
+
+===============================================================================
+
+                    GNU AFFERO GENERAL PUBLIC LICENSE
+                       Version 3, 19 November 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
 
                             Preamble
 
