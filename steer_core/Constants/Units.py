@@ -80,6 +80,10 @@ FRACTION_TO_PERCENT = 1e2
 FRACTION_TO_PPM = 1e6
 PPM_TO_FRACTION = 1e-6
 
+# Unitless
+UNIT_TO_MILLION: float = 1e-6
+MILLION_TO_UNIT: float = 1e6
+
 # Volume units
 L_TO_M3 = 1e-3
 M3_TO_L = 1e3
