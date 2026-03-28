@@ -4,7 +4,6 @@
 """Mixin providing standard datum property interface with mm/m unit conversion."""
 
 from typing import Tuple
-import numpy as np
 
 from steer_core.Constants.Units import M_TO_MM, MM_TO_M
 
@@ -60,9 +59,9 @@ class DatumMixin:
         """Datum position in millimeters."""
         self._ensure_datum_exists()
         return (
-            np.round(self._datum[0] * M_TO_MM, 2),
-            np.round(self._datum[1] * M_TO_MM, 2),
-            np.round(self._datum[2] * M_TO_MM, 2),
+            self._datum[0] * M_TO_MM,
+            self._datum[1] * M_TO_MM,
+            self._datum[2] * M_TO_MM,
         )
     
     @datum.setter
@@ -104,7 +103,7 @@ class DatumMixin:
     def datum_x(self) -> float:
         """X-coordinate of datum in millimeters."""
         self._ensure_datum_exists()
-        return np.round(self._datum[0] * M_TO_MM, 2)
+        return self._datum[0] * M_TO_MM
     
     @datum_x.setter
     def datum_x(self, x: float) -> None:
@@ -115,7 +114,7 @@ class DatumMixin:
     def datum_y(self) -> float:
         """Y-coordinate of datum in millimeters."""
         self._ensure_datum_exists()
-        return np.round(self._datum[1] * M_TO_MM, 2)
+        return self._datum[1] * M_TO_MM
     
     @datum_y.setter
     def datum_y(self, y: float) -> None:
@@ -126,7 +125,7 @@ class DatumMixin:
     def datum_z(self) -> float:
         """Z-coordinate of datum in millimeters."""
         self._ensure_datum_exists()
-        return np.round(self._datum[2] * M_TO_MM, 2)
+        return self._datum[2] * M_TO_MM
     
     @datum_z.setter
     def datum_z(self, z: float) -> None:
