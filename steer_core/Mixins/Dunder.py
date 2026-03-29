@@ -1,9 +1,36 @@
 
 
+# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+import typing
+
 import numpy as np
+
+from steer_core.Utils import is_plotly_trace
+
+# Numeric types accepted by the float-property class-level introspection.
+_NUMERIC_TYPES = (float, int, np.floating, np.integer)
 
 
 class DunderMixin:
+
+    # ── instance methods (unchanged API) ───────────────────────────────
+
+    def _get_comparable_float_properties(self):
+        """Get all @property decorated attributes that return floats."""
+        float_properties = []
+        for cls in self.__class__.__mro__:
+            for name, value in cls.__dict__.items():
+                if isinstance(value, property):
+                    if not self._should_exclude_property_viewable_stat(name):
+                        try:
+                            prop_value = getattr(self, name)
+                            if isinstance(prop_value, (float, np.floating, int, np.integer)):
+                                float_properties.append(name)
+                        except (AttributeError, TypeError):
+                            continue  # Skip properties that raise exceptions
+        return float_properties
 
     def _get_comparable_properties(self):
         """Get all comparable properties from the class hierarchy."""
@@ -17,19 +44,102 @@ class DunderMixin:
 
     def _should_exclude_property(self, name):
         """Check if a property should be excluded from comparison."""
+        return DunderMixin._should_exclude_property_static(name)
+
+    def _should_exclude_property_viewable_stat(self, name):
+        """Check if a property should be excluded from viewable stats."""
+        return DunderMixin._should_exclude_property_viewable_stat_static(name)
+
+    # ── static helpers (no instance required) ──────────────────────────
+
+    @staticmethod
+    def _should_exclude_property_static(name: str) -> bool:
+        """Check if a property should be excluded from comparison."""
         return (
             name.endswith('_trace') or
-            name.endswith('_range') or 
+            name.endswith('_range') or
             name in {'last_updated', 'properties'}
         )
 
-    def _is_plotly_trace(self, obj):
-        """Check if object is a Plotly trace object."""
+    @staticmethod
+    def _should_exclude_property_viewable_stat_static(name: str) -> bool:
+        """Check if a property should be excluded from viewable stats."""
         return (
-            hasattr(obj, '__module__') and 
-            obj.__module__ and 
-            obj.__module__.startswith('plotly.graph_objs')
+            name.endswith('_trace') or
+            name.endswith('_range') or
+            name in {'last_updated', 'properties'} or
+            'datum' in name.lower()
         )
+
+    @staticmethod
+    def _is_numeric_annotation(annotation) -> bool:
+        """Return True if *annotation* resolves to a numeric type.
+
+        Handles plain types (``float``, ``int``), numpy scalar types,
+        ``Optional[float]``,  ``Union[float, int]``, etc.
+        """
+        if annotation is typing.Any:
+            return False
+        origin = getattr(annotation, '__origin__', None)
+        if origin is typing.Union:
+            # e.g. Optional[float] == Union[float, None]
+            return any(
+                DunderMixin._is_numeric_annotation(arg)
+                for arg in annotation.__args__
+                if arg is not type(None)
+            )
+        try:
+            if isinstance(annotation, type) and issubclass(annotation, _NUMERIC_TYPES):
+                return True
+        except TypeError:
+            pass
+        return False
+
+    @classmethod
+    def _get_comparable_float_properties_from_class(cls) -> list[str]:
+        """Discover float-valued ``@property`` names by inspecting the class hierarchy.
+
+        Unlike the instance method ``_get_comparable_float_properties`` this
+        does **not** require a live object.  It walks the MRO, finds
+        ``property`` descriptors, applies the viewable-stat exclusion filter,
+        and then checks the ``fget`` return annotation.  If a property has a
+        numeric return annotation it is included; if it has *no* annotation
+        at all it is included as well (permissive fallback).  Properties
+        that are explicitly annotated as a non-numeric type are excluded.
+        """
+        seen: set[str] = set()
+        float_properties: list[str] = []
+        for klass in cls.__mro__:
+            for name, value in klass.__dict__.items():
+                if name in seen:
+                    continue
+                seen.add(name)
+                if not isinstance(value, property):
+                    continue
+                if DunderMixin._should_exclude_property_viewable_stat_static(name):
+                    continue
+
+                # --- check return annotation of property.fget ---
+                fget = value.fget
+                if fget is None:
+                    continue
+                try:
+                    hints = typing.get_type_hints(fget)
+                except (AttributeError, TypeError, NameError):
+                    hints = {}
+                ret = hints.get('return')
+                if ret is None:
+                    # No annotation → include (permissive fallback).
+                    float_properties.append(name)
+                elif DunderMixin._is_numeric_annotation(ret):
+                    float_properties.append(name)
+                # else: explicitly non-numeric → skip
+        return float_properties
+
+    @staticmethod
+    def _is_plotly_trace(obj):
+        """Check if object is a Plotly trace object."""
+        return is_plotly_trace(obj)
 
     def _compare_none_values(self, self_value, other_value):
         """Compare None values. Returns (should_continue, result)."""
@@ -64,16 +174,17 @@ class DunderMixin:
     def _compare_dictionaries(self, self_value, other_value):
         """Compare dictionaries by comparing keys and values separately. Returns (should_continue, result)."""
         if isinstance(self_value, dict) and isinstance(other_value, dict):
-            # Compare keys first (order-independent)
-            if list(self_value.keys()) == list(other_value.keys()) and list(self_value.values()) == list(other_value.values()):
-                return False, True  # Quick path: both keys and values match in order
-            
-            # Compare values for each key
-            for key in self_value.keys():
-                if self_value[key] != other_value[key]:
+            if len(self_value) != len(other_value):
+                return False, False
+
+            # Compare ordered key-value pairs using __eq__ (not hash-based)
+            # so that objects with identity-based __hash__ still compare
+            # correctly when they are value-equal.
+            for (k1, v1), (k2, v2) in zip(self_value.items(), other_value.items()):
+                if k1 != k2 or v1 != v2:
                     return False, False
-            
-            return False, True  # Dictionaries are equal
+
+            return False, True
         elif isinstance(self_value, dict) or isinstance(other_value, dict):
             return False, False  # One is dict, other is not
         return True, None  # Continue, not dictionaries
@@ -135,18 +246,19 @@ class DunderMixin:
                             return False
                         break  # Values are equal, continue to next property
                         
-            except (AttributeError, Exception):
-                # If property doesn't exist or comparison fails
+            except (AttributeError, TypeError):
                 return False
         
         return True
     
     def __hash__(self):
-        """
-        Simple, robust hash based on object identity.
-        
-        Uses id() for a fast, guaranteed-unique hash that won't fail.
-        Objects are only equal if they're the same instance.
+        """Hash based on object identity.
+
+        Because the objects using this mixin are mutable, a content-based
+        hash would be unstable.  Using ``id()`` means that two distinct
+        objects that compare equal via ``__eq__`` will have different
+        hashes -- avoid using these objects as ``set`` members or ``dict``
+        keys when value-based identity matters.
         """
         return hash(id(self))
     
