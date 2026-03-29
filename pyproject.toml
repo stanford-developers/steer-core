@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "steer-core"
 dynamic = ["version"]
-description = "Modelling energy storage from cell to site - STEER OpenCell Design"
+description = "Base utilities, mixins, and constants for the STEER OpenCell platform."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = {text = "AGPL-3.0-or-later"}
 authors = [
     {name = "Nicholas Siemons", email = "nsiemons@stanford.edu"},
 ]
@@ -18,11 +18,11 @@ maintainers = [
 keywords = ["energy", "storage", "battery", "modeling", "simulation"]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
@@ -33,13 +33,19 @@ dependencies = [
     "datetime==5.5",
     "plotly==6.2.0",
     "scipy==1.15.3",
+    "msgpack==1.1.1",
+    "msgpack-numpy==0.4.8",
+    "requests>=2.31.0",
+    "nbformat==5.10.4",
+    "shapely==2.1.1",
+    "lz4==4.4.4"
 ]
 
 [project.urls]
-Homepage = "https://github.com/nicholas9182/steer-core/"
-Repository = "https://github.com/nicholas9182/steer-core/"
-Issues = "https://github.com/nicholas9182/steer-core/issues"
-Documentation = "https://github.com/nicholas9182/steer-core/"
+Homepage = "https://github.com/stanford-developers/steer-core/"
+Repository = "https://github.com/stanford-developers/steer-core/"
+Issues = "https://github.com/stanford-developers/steer-core/issues"
+Documentation = "https://stanford-developers.github.io/steer-core/"
 
 [project.optional-dependencies]
 dev = [
@@ -54,6 +60,11 @@ test = [
     "pytest>=7.0",
     "pytest-cov",
 ]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+    "mkdocstrings[python]>=0.24",
+]
 
 [tool.setuptools]
 include-package-data = true
@@ -63,7 +74,7 @@ where = ["."]
 include = ["steer_core*"]
 
 [tool.setuptools.package-data]
-"steer_core.Data" = ["database.db"]
+"steer_core.Data" = ["*.py"]
 
 [tool.setuptools.dynamic]
 version = {attr = "steer_core.__version__"}
@@ -96,9 +107,20 @@ known_first_party = ["steer_core"]
 minversion = "7.0"
 addopts = "-ra -q --strict-markers"
 testpaths = [
-    "tests",
+    "test",
 ]
 python_files = [
     "test_*.py",
     "*_test.py",
+]
+
+[tool.coverage.run]
+source = ["steer_core"]
+omit = ["*/test/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "raise NotImplementedError",
 ]

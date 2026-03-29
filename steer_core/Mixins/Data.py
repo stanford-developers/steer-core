@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from copy import deepcopy
 import numpy as np
 from scipy.interpolate import PchipInterpolator
@@ -5,8 +8,8 @@ from scipy.interpolate import PchipInterpolator
 
 class DataMixin:
     """
-    A mixin class to handle data processing and validation for electrode materials.
-    Provides methods to calculate properties, check curve directions, and process half-cell curves.
+    A mixin class providing data processing and validation utilities.
+    Provides methods for monotonicity enforcement and nested breakdown aggregation.
     """
 
     @staticmethod
@@ -46,18 +49,13 @@ class DataMixin:
         Aggregate breakdown dictionaries across multiple components.
         If a component doesn't have the specified breakdown, use its fallback attribute instead.
 
-        Parameters
-        ----------
-        components : list
-            List of component objects
-        breakdown_type : str, optional
-            Type of breakdown to aggregate ('mass', 'cost', etc.), by default 'mass'
-            
-        Returns
-        -------
-        dict or float
+        Args:
+            components: List of component objects.
+            breakdown_type: Type of breakdown to aggregate ('mass', 'cost', etc.).
+
+        Returns:
             Aggregated breakdown dictionary with summed values maintaining structure,
-            or simple float sum if no components have the specified breakdown
+            or simple float sum if no components have the specified breakdown.
         """
         def add_dicts(dict1, dict2):
             """Recursively add two dictionaries with matching structure."""
