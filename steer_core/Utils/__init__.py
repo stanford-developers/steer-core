@@ -1,9 +1,9 @@
-# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-FileCopyrightText: 2024-2026 Stanford University
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Utility functions for the steer-core package."""
 
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -39,21 +39,25 @@ def is_plotly_trace(obj: object) -> bool:
 
 
 def round_dict_recursive(
-    obj: Any, precision: int = 2, unit_conversion: float = 1.0
+    obj: Any, precision: Optional[int] = 2, unit_conversion: float = 1.0
 ) -> Any:
     """Recursively round values in a nested dictionary.
 
     Args:
         obj: Dictionary or numeric value to round.
-        precision: Number of decimal places, by default 2.
+        precision: Number of decimal places, by default 2. If ``None``, apply
+            ``unit_conversion`` only and do not round.
         unit_conversion: Multiplicative factor applied before rounding, by default 1.0.
 
     Returns:
-        Rounded dictionary or value.
+        Rounded dictionary or value (scaled if ``precision`` is ``None``).
     """
     if isinstance(obj, dict):
         return {
             k: round_dict_recursive(v, precision, unit_conversion)
             for k, v in obj.items()
         }
-    return np.round(obj * unit_conversion, precision)
+    scaled = obj * unit_conversion
+    if precision is None:
+        return scaled
+    return np.round(scaled, precision)
