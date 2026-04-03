@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-FileCopyrightText: 2024-2026 Stanford University
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Tests for steer_core.Utils."""
@@ -70,3 +70,12 @@ class TestRoundDictRecursive:
 
     def test_empty_dict(self):
         assert round_dict_recursive({}) == {}
+
+    def test_precision_none_scales_without_rounding(self):
+        assert round_dict_recursive(3.14159265, precision=None) == pytest.approx(
+            3.14159265
+        )
+        result = round_dict_recursive(
+            {"a": 0.001}, precision=None, unit_conversion=1000.0
+        )
+        assert result["a"] == pytest.approx(1.0)
