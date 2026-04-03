@@ -54,11 +54,19 @@ D_TO_S = 3600 * 24
 H_TO_D = 1 / 24
 H_TO_W = 1 / (24 * 7)
 Y_TO_M = 12
+H_TO_US = 3600000
+D_TO_H = 24
+W_TO_D = 7
+S_TO_US = 1000
+M_TO_Y = 1 / 12
+
 
 D_TO_W = 1 / 7
 AVG_D_TO_MONTH = 12 / 365.25
 AVG_D_TO_Y = 1 / 365.25
 Y_TO_AVG_D = 365.25
+AVG_W_TO_Y = 1 / (365.25 / 7)
+AVG_H_TO_Y = 1 / (365.25 * 24)
 
 
 # Energy units
@@ -74,6 +82,10 @@ PERCENT_TO_FRACTION = 1e-2
 FRACTION_TO_PERCENT = 1e2
 FRACTION_TO_PPM = 1e6
 PPM_TO_FRACTION = 1e-6
+
+# Unitless
+UNIT_TO_MILLION: float = 1e-6
+MILLION_TO_UNIT: float = 1e6
 
 # Volume units
 L_TO_M3 = 1e-3
