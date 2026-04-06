@@ -8,7 +8,7 @@ import lz4.frame
 import zlib
 import numpy as np
 from typing import TypeVar, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
 # Patch msgpack for numpy support once at module import
@@ -93,6 +93,10 @@ class SerializerMixin:
         if value_type is datetime:
             return {'__datetime__': value.isoformat()}
         
+        # timedelta handling
+        if value_type is timedelta:
+            return {'__timedelta__': value.total_seconds()}
+        
         # Pandas DataFrame handling (lazy import to avoid hard dependency)
         try:
             import pandas as pd
@@ -119,6 +123,13 @@ class SerializerMixin:
         # List handling
         if value_type is list:
             return [self._serialize_value(item) for item in value]
+        
+        # Set handling
+        if value_type is set:
+            return {
+                '__set__': True,
+                'items': [self._serialize_value(item) for item in value]
+            }
         
         # Dict handling - single pass detection and serialization
         if value_type is dict:
@@ -272,6 +283,8 @@ class SerializerMixin:
                 return obj_class._from_dict(obj_data)
             elif '__datetime__' in value:
                 return datetime.fromisoformat(value['__datetime__'])
+            elif '__timedelta__' in value:
+                return timedelta(seconds=value['__timedelta__'])
             elif '__enum__' in value:
                 # Reconstruct enum using cached class lookup
                 enum_class = _get_class(value['class'])
@@ -279,6 +292,8 @@ class SerializerMixin:
             elif '__tuple__' in value:
                 # Recursively reconstruct tuple items
                 return tuple(cls._deserialize_value(item) for item in value['items'])
+            elif '__set__' in value:
+                return set(cls._deserialize_value(item) for item in value['items'])
             elif '__dataframe__' in value:
                 import pandas as pd
                 if value.get('__multiindex__'):
