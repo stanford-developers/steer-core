@@ -251,3 +251,40 @@ class TestValidateNumber:
     def test_string_raises(self):
         with pytest.raises(TypeError):
             ValidationMixin.validate_number("100", "amount")
+
+
+class TestValidateNotNone:
+
+    def test_non_none_passes(self):
+        ValidationMixin.validate_not_none(42, "rate")
+
+    def test_zero_passes(self):
+        ValidationMixin.validate_not_none(0, "rate")
+
+    def test_empty_string_passes(self):
+        ValidationMixin.validate_not_none("", "rate")
+
+    def test_none_raises(self):
+        with pytest.raises(ValueError, match="must not be None"):
+            ValidationMixin.validate_not_none(None, "rate")
+
+
+class TestValidateActiveMode:
+
+    def test_matching_mode_passes(self):
+        ValidationMixin.validate_active_mode("real", "real", "real_npv")
+
+    def test_matching_enum_passes(self):
+        from enum import Enum
+        class Mode(str, Enum):
+            REAL = "real"
+            NOMINAL = "nominal"
+        ValidationMixin.validate_active_mode(Mode.REAL, Mode.REAL, "real_npv")
+
+    def test_mismatched_mode_raises(self):
+        with pytest.raises(RuntimeError, match="not available in 'real' mode"):
+            ValidationMixin.validate_active_mode("real", "nominal", "nominal_npv")
+
+    def test_error_message_contains_property_name(self):
+        with pytest.raises(RuntimeError, match="'nominal_net_present_value'"):
+            ValidationMixin.validate_active_mode("real", "nominal", "nominal_net_present_value")
