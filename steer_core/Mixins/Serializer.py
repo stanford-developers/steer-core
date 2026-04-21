@@ -210,13 +210,20 @@ class SerializerMixin:
         Override this in subclasses to customize serialization behavior.
         Single-pass implementation for efficiency.
 
+        Subclasses may define ``_serializer_exclude`` as a set of attribute
+        names to skip during serialization (e.g. transient caches).
+
         Returns:
             Dictionary representation of the object.
         """
+        exclude = getattr(self, '_serializer_exclude', None) or set()
         result = {}
         for key, value in self.__dict__.items():
             # Skip _parent - PropagationMixin rebuilds it via _from_dict
             if key == '_parent':
+                continue
+            # Skip attributes explicitly excluded by subclasses
+            if key in exclude:
                 continue
             # Skip non-serializable callables
             if callable(value) and not hasattr(value, '_to_dict'):
