@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2024-2026 Stanford University
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-## Unit conversions
-# Length units
+# =============================================================================
+# MASS UNITS
+# =============================================================================
 KG_TO_G = 1e3
 KG_TO_T = 1e-3
 T_TO_KG = 1e3
@@ -13,8 +14,15 @@ MT_TO_T = 1e6       # megatonnes to tonnes
 G_TO_T = G_TO_KG * KG_TO_T  # 1e-6
 T_TO_G = T_TO_KG * KG_TO_G  # 1e6
 
-KMOL_TO_MOL = 1e3  
+# =============================================================================
+# MOLAR UNITS
+# =============================================================================
+KMOL_TO_MOL = 1e3
 MOL_TO_KMOL = 1e-3
+
+# =============================================================================
+# LENGTH UNITS
+# =============================================================================
 M_TO_CM = 1e2
 CM_TO_M = 1e-2
 M_TO_MM = 1e3
@@ -39,14 +47,18 @@ T_TO_SHORT_TON = 1.10231
 SHORT_TON_TO_T = 1 / 1.10231
 LB_TO_SHORT_TON = 1 / 2000
 SHORT_TON_TO_LB = 2000
-LB_TO_T = 1 / 2000 * 1/1.10231
+# Cascaded imperial-to-metric mass conversions
+LB_TO_T = LB_TO_KG * KG_TO_T
 
-
-# Current units
+# =============================================================================
+# CURRENT UNITS
+# =============================================================================
 A_TO_mA = 1e3
 mA_TO_A = 1e-3
 
-# Time units
+# =============================================================================
+# TIME UNITS
+# =============================================================================
 S_TO_H = 1 / 3600
 H_TO_S = 3600
 S_TO_MIN = 1 / 60
@@ -60,24 +72,30 @@ Y_TO_H = 8760
 S_TO_D = 1 / (3600 * 24)
 D_TO_S = 3600 * 24
 H_TO_D = 1 / 24
+D_TO_H = 24
 H_TO_W = 1 / (24 * 7)
+D_TO_W = 1 / 7
+W_TO_D = 7
 Y_TO_M = 12
-H_TO_US = 3600000
 D_TO_H = 24
 W_TO_D = 7
-S_TO_US = 1000
 M_TO_Y = 1 / 12
 
+# Millisecond conversions (used for Plotly datetime axis bin sizing)
+S_TO_MS = 1e3
+H_TO_MS = H_TO_S * S_TO_MS                   # 3_600_000
+D_TO_MS = D_TO_S * S_TO_MS                   # 86_400_000
 
-D_TO_W = 1 / 7
+# Average-based time conversions
 AVG_D_TO_MONTH = 12 / 365.25
 AVG_D_TO_Y = 1 / 365.25
 Y_TO_AVG_D = 365.25
 AVG_W_TO_Y = 1 / (365.25 / 7)
 AVG_H_TO_Y = 1 / (365.25 * 24)
 
-
-# Energy units
+# =============================================================================
+# ENERGY UNITS
+# =============================================================================
 W_TO_KW = 1e-3
 KW_TO_W = 1e3
 KW_TO_MW = 1e-3
@@ -151,15 +169,12 @@ FRACTION_TO_PERCENT = 1e2
 FRACTION_TO_PPM = 1e6
 PPM_TO_FRACTION = 1e-6
 
-# Unitless
-UNIT_TO_MILLION: float = 1e-6
-MILLION_TO_UNIT: float = 1e6
+UNIT_TO_MILLION = 1e-6
+MILLION_TO_UNIT = 1e6
 
-# Unitless
-UNIT_TO_MILLION: float = 1e-6
-MILLION_TO_UNIT: float = 1e6
-
-# Volume units
+# =============================================================================
+# VOLUME UNITS
+# =============================================================================
 L_TO_M3 = DM_TO_M**3  # Derived from length (1e-3)
 M3_TO_L = 1.0 / L_TO_M3
 GAL_TO_L = 3.78541
