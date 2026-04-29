@@ -343,6 +343,20 @@ class ValidationMixin:
 
     @staticmethod
     def validate_base_binning_frequency(value, name: str = "base_binning_frequency") -> None:
+        """Validate that *value* is an allowed base binning frequency ('hourly' or 'daily').
+
+        Parameters
+        ----------
+        value : Frequency enum or str
+            The value to validate.
+        name : str
+            Parameter name used in the error message.
+
+        Raises
+        ------
+        ValueError
+            If the value is not 'hourly' or 'daily'.
+        """
         val = value.value if hasattr(value, "value") else str(value).lower()
         if val not in ("hourly", "daily"):
             raise ValueError(
@@ -351,6 +365,22 @@ class ValidationMixin:
 
     @staticmethod
     def validate_display_frequency(display_freq, base_freq, name: str = "display_frequency") -> None:
+        """Validate that *display_freq* is equal to or coarser than *base_freq*.
+
+        Parameters
+        ----------
+        display_freq : Frequency enum
+            The display frequency to validate.
+        base_freq : Frequency enum
+            The base binning frequency.
+        name : str
+            Parameter name used in the error message.
+
+        Raises
+        ------
+        ValueError
+            If display_freq is finer than base_freq.
+        """
         d_rank = display_freq.rank if hasattr(display_freq, "rank") else 0
         b_rank = base_freq.rank if hasattr(base_freq, "rank") else 0
         if d_rank < b_rank:
@@ -361,6 +391,26 @@ class ValidationMixin:
 
     @staticmethod
     def validate_base_binning_frequency_not_increased(current_freq, new_freq, name: str = "base_binning_frequency") -> None:
+        """Validate that *new_freq* is not finer than *current_freq*.
+
+        Prevents increasing the resolution of an already-set base binning frequency
+        (e.g., daily → hourly), which would fabricate precision that was never there.
+        Going coarser (hourly → daily) is always allowed.
+
+        Parameters
+        ----------
+        current_freq : Frequency enum
+            The currently set base binning frequency.
+        new_freq : Frequency enum
+            The proposed new base binning frequency.
+        name : str
+            Parameter name used in the error message.
+
+        Raises
+        ------
+        ValueError
+            If new_freq is finer than current_freq.
+        """
         if new_freq.rank < current_freq.rank:
             raise ValueError(
                 f"Cannot change {name} from '{current_freq.value}' to '{new_freq.value}': "
@@ -369,6 +419,22 @@ class ValidationMixin:
 
     @staticmethod
     def validate_compounding_frequency(base_freq, compounding_freq, name: str = "compounding_frequency") -> None:
+        """Validate that *base_freq* is equal to or finer than *compounding_freq*.
+
+        Parameters
+        ----------
+        base_freq : Frequency enum
+            The base binning frequency.
+        compounding_freq : Frequency enum
+            The compounding frequency.
+        name : str
+            Parameter name used in the error message.
+
+        Raises
+        ------
+        ValueError
+            If base_freq is coarser than compounding_freq.
+        """
         b_rank = base_freq.rank if hasattr(base_freq, "rank") else 0
         c_rank = compounding_freq.rank if hasattr(compounding_freq, "rank") else 0
         if b_rank > c_rank:
@@ -376,4 +442,3 @@ class ValidationMixin:
                 f"base_binning_frequency '{base_freq.value}' is coarser than "
                 f"{name} '{compounding_freq.value}'."
             )
-
