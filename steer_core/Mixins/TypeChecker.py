@@ -337,3 +337,43 @@ class ValidationMixin:
         if not isinstance(value, (int, float, np.int64)):
             raise TypeError(f"{name} must be a number (int or float). Provided: {type(value).__name__}.")
 
+    # ------------------------------------------------------------------
+    # Frequency-architecture validators
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def validate_base_binning_frequency(value, name: str = "base_binning_frequency") -> None:
+        val = value.value if hasattr(value, "value") else str(value).lower()
+        if val not in ("hourly", "daily"):
+            raise ValueError(
+                f"{name} must be 'hourly' or 'daily'. Provided: '{val}'."
+            )
+
+    @staticmethod
+    def validate_display_frequency(display_freq, base_freq, name: str = "display_frequency") -> None:
+        d_rank = display_freq.rank if hasattr(display_freq, "rank") else 0
+        b_rank = base_freq.rank if hasattr(base_freq, "rank") else 0
+        if d_rank < b_rank:
+            raise ValueError(
+                f"{name} '{display_freq.value}' is finer than "
+                f"base_binning_frequency '{base_freq.value}'."
+            )
+
+    @staticmethod
+    def validate_base_binning_frequency_not_increased(current_freq, new_freq, name: str = "base_binning_frequency") -> None:
+        if new_freq.rank < current_freq.rank:
+            raise ValueError(
+                f"Cannot change {name} from '{current_freq.value}' to '{new_freq.value}': "
+                f"cannot increase resolution on an existing instance."
+            )
+
+    @staticmethod
+    def validate_compounding_frequency(base_freq, compounding_freq, name: str = "compounding_frequency") -> None:
+        b_rank = base_freq.rank if hasattr(base_freq, "rank") else 0
+        c_rank = compounding_freq.rank if hasattr(compounding_freq, "rank") else 0
+        if b_rank > c_rank:
+            raise ValueError(
+                f"base_binning_frequency '{base_freq.value}' is coarser than "
+                f"{name} '{compounding_freq.value}'."
+            )
+
