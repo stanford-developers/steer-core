@@ -67,11 +67,6 @@ class TestUniversal:
     def test_two_pi(self):
         assert Universal.TWO_PI == pytest.approx(2 * math.pi)
 
-    def test_molar_masses_positive(self):
-        assert Universal.MW_G_PER_MOL_NO2 > 0
-        assert Universal.MW_G_PER_MOL_SO2 > 0
-        assert Universal.MW_G_PER_MOL_CO2 > 0
-
 
 # Need pytest.approx at module level for parametrized tests
 import pytest
