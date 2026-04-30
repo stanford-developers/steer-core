@@ -13,7 +13,7 @@ class ThermodynamicsMixin:
     """Mixin providing generic thermodynamic calculation methods."""
     
     @staticmethod
-    def antoine_pressure(T: float, A: float, B: float, C: float) -> float:
+    def calculate_antoine_pressure(T: float, A: float, B: float, C: float) -> float:
         """
         Calculate vapor pressure using Antoine equation.
         
@@ -29,7 +29,7 @@ class ThermodynamicsMixin:
         return 10 ** (A - B / (T + C))
     
     @staticmethod
-    def antoine_temperature(P: float, A: float, B: float, C: float) -> float:
+    def calculate_antoine_temperature(P: float, A: float, B: float, C: float) -> float:
         """
         Calculate temperature from vapor pressure using inverse Antoine equation.
         
@@ -44,7 +44,7 @@ class ThermodynamicsMixin:
         return B / (A - log_P) - C
     
     @staticmethod
-    def ideal_gas_density(P_Pa: float, T_K: float, MW_kg_mol: float) -> float:
+    def calculate_ideal_gas_density(P_Pa: float, T_K: float, MW_kg_mol: float) -> float:
         """
         Calculate ideal gas density using ideal gas law.
         
