@@ -137,6 +137,9 @@ PA_TO_KPA = 1e-3
 # Cascaded pressure conversions
 BAR_TO_KPA = BAR_TO_PA * PA_TO_KPA  # 1e2
 KPA_TO_BAR = KPA_TO_PA * PA_TO_BAR  # 1e-2
+MMHG_TO_PA = 133.322                 # mmHg to Pascal
+PA_TO_MMHG = 1.0 / MMHG_TO_PA       # Pascal to mmHg
+GPU_TO_SI = 3.35e-10                 # mol/(m²·s·Pa) per GPU (gas permeation unit)
 
 # =============================================================================
 # TEMPERATURE UNITS
