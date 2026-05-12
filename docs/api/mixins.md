@@ -41,4 +41,8 @@ geometry, datetime handling, change propagation, and more.
 
 ---
 
+::: steer_core.Mixins.Thermodynamics
+
+---
+
 ::: steer_core.Mixins.TypeChecker

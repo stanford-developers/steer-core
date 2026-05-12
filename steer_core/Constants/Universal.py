@@ -5,7 +5,14 @@
 PI = 3.14159265358979323846
 TWO_PI = 2.0 * PI
 
-# Molar Masses
-MW_G_PER_MOL_NO2 = 46.0055
-MW_G_PER_MOL_SO2 = 64.0638
-MW_G_PER_MOL_CO2 = 44.0095
+# Universal Physical Constants
+
+R_GAS = 8.314462618  # J/(mol·K) Universal gas constant (CODATA 2018)
+
+GRAVITY = 9.80665  # m/s² — Standard acceleration due to gravity (exact by definition)
+
+
+# Standard Conditions
+
+STANDARD_PRESSURE = 101325.0  # Pa (1 atm)
+STANDARD_TEMPERATURE = 273.15  # K
