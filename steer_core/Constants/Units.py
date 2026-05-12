@@ -126,6 +126,12 @@ J_TO_BTU = 1 / 1055.05585262
 BTU_TO_MMBTU = 1e-6
 MMBTU_TO_BTU = 1e6
 
+# Cascaded energy conversions — GJ ↔ MMBtu, MWh ↔ MMBtu
+GJ_TO_MMBTU = GJ_TO_J * J_TO_BTU * BTU_TO_MMBTU
+MMBTU_TO_GJ = 1.0 / GJ_TO_MMBTU
+MWH_TO_MMBTU = MWH_TO_GJ * GJ_TO_MMBTU
+MMBTU_TO_MWH = 1.0 / MWH_TO_MMBTU
+
 
 # =============================================================================
 # PRESSURE UNITS
