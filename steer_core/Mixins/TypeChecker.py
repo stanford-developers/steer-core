@@ -9,7 +9,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from steer_core.Constants.Format import DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT
+from steer_core.Constants.Format import DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT, DEFAULT_MONTH_FMT
 from steer_core.Utils import is_plotly_trace as _is_plotly_trace
 
 
@@ -282,7 +282,7 @@ class ValidationMixin:
     def validate_datetime_string(value: str, name: str) -> None:
         """Validate that a string is in a valid datetime format.
 
-        Accepts either 'YYYY-MM-DD-HH' (hourly) or 'YYYY-MM-DD' (daily) formats.
+        Accepts 'YYYY-MM-DD-HH' (hourly), 'YYYY-MM-DD' (daily), or 'YYYY-MM' (monthly) formats.
 
         Args:
             value: The datetime string to validate.
@@ -295,13 +295,14 @@ class ValidationMixin:
         Examples:
             >>> ValidationMixin.validate_datetime_string('2024-01-15-14', 'start_dt')  # OK
             >>> ValidationMixin.validate_datetime_string('2024-01-15', 'start_dt')     # OK
+            >>> ValidationMixin.validate_datetime_string('2024-01', 'start_dt')        # OK
             >>> ValidationMixin.validate_datetime_string('2024/01/15', 'start_dt')     # Raises ValueError
         """
         if not isinstance(value, str):
             raise TypeError(f"{name} must be a string. Provided: {type(value).__name__}.")
         
-        # Try both formats
-        formats = [DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT]
+        # Try all supported formats
+        formats = [DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT, DEFAULT_MONTH_FMT]
         for fmt in formats:
             try:
                 datetime.strptime(value, fmt)
@@ -311,7 +312,7 @@ class ValidationMixin:
         
         # If none of the formats worked, raise an error
         raise ValueError(
-            f"{name} must be in format 'YYYY-MM-DD-HH' or 'YYYY-MM-DD'. Provided: {value}."
+            f"{name} must be in format 'YYYY-MM-DD-HH', 'YYYY-MM-DD', or 'YYYY-MM'. Provided: {value}."
         )
 
     @staticmethod
@@ -383,7 +384,9 @@ class ValidationMixin:
 
     @staticmethod
     def validate_base_binning_frequency(value, name: str = "base_binning_frequency") -> None:
-        """Validate that *value* is an allowed base binning frequency ('hourly' or 'daily').
+        """Validate that *value* is an allowed base binning frequency.
+
+        Allowed values are ``'hourly'``, ``'daily'``, or ``'monthly'``.
 
         Parameters
         ----------
@@ -395,12 +398,12 @@ class ValidationMixin:
         Raises
         ------
         ValueError
-            If the value is not 'hourly' or 'daily'.
+            If the value is not 'hourly', 'daily', or 'monthly'.
         """
         val = value.value if hasattr(value, "value") else str(value).lower()
-        if val not in ("hourly", "daily"):
+        if val not in ("hourly", "daily", "monthly"):
             raise ValueError(
-                f"{name} must be 'hourly' or 'daily'. Provided: '{val}'."
+                f"{name} must be 'hourly', 'daily', or 'monthly'. Provided: '{val}'."
             )
 
     @staticmethod

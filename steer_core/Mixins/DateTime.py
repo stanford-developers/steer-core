@@ -18,7 +18,7 @@ import calendar
 from datetime import datetime
 from typing import Optional
 
-from steer_core.Constants.Format import DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT
+from steer_core.Constants.Format import DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT, DEFAULT_MONTH_FMT
 
 
 class DateTimeMixin:
@@ -63,16 +63,16 @@ class DateTimeMixin:
             except ValueError as e:
                 raise ValueError(f"value must match format '{fmt}' (got '{value}')") from e
         
-        # Auto-detect format: try hour format first, then day format
-        for try_fmt in [DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT]:
+        # Auto-detect format: try hour format first, then day, then month
+        for try_fmt in [DEFAULT_HOUR_FMT, DEFAULT_DAY_FMT, DEFAULT_MONTH_FMT]:
             try:
                 return datetime.strptime(value, try_fmt)
             except ValueError:
                 continue
         
-        # If neither format worked, raise an error
+        # If no format worked, raise an error
         raise ValueError(
-            f"value must match format '{DEFAULT_HOUR_FMT}' or '{DEFAULT_DAY_FMT}' (got '{value}')"
+            f"value must match format '{DEFAULT_HOUR_FMT}', '{DEFAULT_DAY_FMT}', or '{DEFAULT_MONTH_FMT}' (got '{value}')"
         )
 
     @staticmethod
