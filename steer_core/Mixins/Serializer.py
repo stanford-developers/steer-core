@@ -344,10 +344,10 @@ class SerializerMixin:
 
         The backend is selected by the ``OPENCELL_ENV`` environment variable:
 
-        - ``development`` — uses the local SQLite database via
+        - ``development`` (default) — uses the local SQLite database via
           ``steer_opencell_data.DataManager``. No network calls, works offline.
           Requires ``steer-opencell-data`` to be installed with ``database.db``.
-        - ``production`` (default) — uses the REST API via
+        - ``production`` — uses the REST API via
           ``steer_core.Data.DataManager``. Requires the ``API_URL`` env var
           pointing to the deployed Lambda endpoint.
 
@@ -366,7 +366,17 @@ class SerializerMixin:
         from steer_core.Data import is_development
         _dev_mode = is_development()
         if _dev_mode:
-            from steer_opencell_data.DataManager import DataManager
+            try:
+                from steer_opencell_data.DataManager import DataManager
+            except ImportError as exc:
+                raise ImportError(
+                    "Development mode (OPENCELL_ENV=development, the default) "
+                    "requires the 'steer-opencell-data' package, which provides "
+                    "the local SQLite database. It is not on PyPI; install it "
+                    "with Git LFS available: 'pip install "
+                    "git+https://github.com/stanford-developers/steer-opencell-data.git', "
+                    "or set OPENCELL_ENV=production and API_URL to use the REST API."
+                ) from exc
         else:
             from steer_core.Data.DataManager import DataManager
             from steer_core.Data.DataManager import NotFoundError

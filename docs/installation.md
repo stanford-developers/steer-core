@@ -23,6 +23,6 @@ pip install -e ".[dev]"
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `OPENCELL_ENV` | No | `production` | `development` = local SQLite, `production` = REST API |
+| `OPENCELL_ENV` | No | `development` | `development` = local SQLite, `production` = REST API |
 | `API_URL` | In production | — | Base URL of the REST API |
 | `API_TIMEOUT` | No | `30` | HTTP request timeout in seconds |

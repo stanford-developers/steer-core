@@ -183,8 +183,13 @@ class TestRequestErrorHandling:
 
 class TestIsDevelopment:
 
-    def test_production_by_default(self, monkeypatch):
+    def test_development_by_default(self, monkeypatch):
         monkeypatch.delenv("OPENCELL_ENV", raising=False)
+        from steer_core.Data import is_development
+        assert is_development() is True
+
+    def test_production_mode(self, monkeypatch):
+        monkeypatch.setenv("OPENCELL_ENV", "production")
         from steer_core.Data import is_development
         assert is_development() is False
 

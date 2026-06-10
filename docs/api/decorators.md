@@ -9,7 +9,3 @@ Property-recalculation decorators for automatic change propagation.
 ---
 
 ::: steer_core.Decorators.Coordinates
-
----
-
-::: steer_core.Decorators.Objects
