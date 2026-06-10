@@ -54,7 +54,7 @@ os.environ["API_URL"] = "https://api.opencell.example.com/production"
 from steer_core.Data.DataManager import DataManager
 
 db = DataManager()
-materials = db.get_cathode_materials()
+materials = db.get_data("cathode_materials")
 print(materials)
 ```
 
