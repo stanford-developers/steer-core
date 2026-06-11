@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024-2026 Nicholas Siemons
+# SPDX-FileCopyrightText: 2024-2026 Stanford University
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from __future__ import annotations
@@ -202,6 +202,10 @@ class PlotterMixin:
         root_label: str = "Total",
         unit: str = "",
         colorway: list[str] = None,
+        sort_siblings: bool = True,
+        textinfo: str = "label",
+        branch_color_map: dict[str, str] | None = None,
+        label_wrap_width: int = 14,
         **kwargs,
     ) -> go.Figure:
         """Create a sunburst plot for any generic nested breakdown dictionary.
@@ -214,6 +218,13 @@ class PlotterMixin:
             unit: Unit string to display in hover text (e.g., "g", "kg", "%"). Defaults to "".
             colorway: List of colors to use for the inner ring. If None, uses Plotly's default
                 colorway. Defaults to None.
+            sort_siblings: Sort sibling nodes by descending contribution. Defaults to True.
+            textinfo: Text displayed on sunburst segments. Defaults to label only, keeping
+                longer labels readable.
+            branch_color_map: Optional mapping from label text to a base color. Matching
+                labels and their descendants use the mapped color.
+            label_wrap_width: Wrap labels longer than this many characters onto multiple
+                lines. Set to 0 or None to disable wrapping. Defaults to 14.
 
         Returns:
             Plotly sunburst figure.
@@ -226,16 +237,6 @@ class PlotterMixin:
                 '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'
             ]
 
-        def _flatten_breakdown_values(data: dict[str, Any]) -> list[float]:
-            """Recursively flatten all numeric values from nested breakdown dictionary"""
-            values = []
-            for value in data.values():
-                if isinstance(value, dict):
-                    values.extend(_flatten_breakdown_values(value))
-                elif isinstance(value, (int, float)):
-                    values.append(float(value))
-            return values
-
         def _calculate_subtotal(data: dict[str, Any]) -> float:
             """Calculate the total value for a dictionary (sum of all nested numeric values)"""
             total = 0.0
@@ -246,30 +247,100 @@ class PlotterMixin:
                     total += float(value)
             return total
 
+        def _node_value(value: Any) -> float:
+            """Return the numeric contribution for a scalar or nested node."""
+            if isinstance(value, dict):
+                return _calculate_subtotal(value)
+            if isinstance(value, (int, float)):
+                return float(value)
+            return 0.0
+
+        def _iter_items(data: dict[str, Any]) -> list[tuple[str, Any]]:
+            """Return display-ordered breakdown items."""
+            items = list(data.items())
+            if sort_siblings:
+                items.sort(key=lambda item: _node_value(item[1]), reverse=True)
+            return items
+
+        normalized_branch_color_map = {
+            key.lower(): value for key, value in (branch_color_map or {}).items()
+        }
+
+        def _branch_color_for_label(label: str) -> str | None:
+            """Return a semantic branch color for labels such as Cathode or Anode."""
+            normalized_label = label.lower()
+            for key, color in normalized_branch_color_map.items():
+                if key == normalized_label or key in normalized_label:
+                    return color
+            return None
+
+        def _wrap_label(label: str) -> str:
+            """Insert line breaks so long sunburst labels remain visible."""
+            if not label_wrap_width or len(label) <= label_wrap_width:
+                return label
+
+            words = label.split()
+            if len(words) <= 1:
+                return label
+
+            lines = []
+            current_line = words[0]
+            for word in words[1:]:
+                candidate = f"{current_line} {word}"
+                if len(candidate) > label_wrap_width:
+                    lines.append(current_line)
+                    current_line = word
+                else:
+                    current_line = candidate
+
+            lines.append(current_line)
+            return "<br>".join(lines)
+
         def _prepare_sunburst_data(
-            data: dict[str, Any], parent_id: str = "", current_path: str = "", depth: int = 1
-        ) -> tuple[list[str], list[str], list[str], list[float], list[int]]:
+            data: dict[str, Any],
+            parent_id: str = "",
+            current_path: str = "",
+            depth: int = 1,
+            parent_total: float = 0.0,
+            first_level_ancestor: str | None = None,
+            inherited_branch_color: str | None = None,
+        ) -> tuple[
+            list[str],
+            list[str],
+            list[str],
+            list[float],
+            list[int],
+            list[float],
+            list[str | None],
+            list[str | None],
+        ]:
             """Recursively prepare data for sunburst plot with proper hierarchy"""
             ids = []
             labels = []
             parents = []
             values = []
             depths = []
+            parent_values = []
+            first_level_ancestors = []
+            semantic_branch_colors = []
 
-            for key, value in data.items():
+            for key, value in _iter_items(data):
                 # Create unique ID for this node
                 node_id = f"{current_path}/{key}" if current_path else key
+                subtotal = _node_value(value)
+                ancestor = key if depth == 1 else first_level_ancestor
+                branch_color = _branch_color_for_label(key) or inherited_branch_color
 
                 ids.append(node_id)
                 labels.append(key)
                 parents.append(parent_id)
+                values.append(subtotal)
                 depths.append(depth)
+                parent_values.append(parent_total)
+                first_level_ancestors.append(ancestor)
+                semantic_branch_colors.append(branch_color)
 
                 if isinstance(value, dict):
-                    # This is a nested dictionary - calculate its total value
-                    subtotal = _calculate_subtotal(value)
-                    values.append(subtotal)
-
                     # Recursively process nested dictionary
                     (
                         nested_ids,
@@ -277,8 +348,17 @@ class PlotterMixin:
                         nested_parents,
                         nested_values,
                         nested_depths,
+                        nested_parent_values,
+                        nested_first_level_ancestors,
+                        nested_semantic_branch_colors,
                     ) = _prepare_sunburst_data(
-                        value, parent_id=node_id, current_path=node_id, depth=depth + 1
+                        value,
+                        parent_id=node_id,
+                        current_path=node_id,
+                        depth=depth + 1,
+                        parent_total=subtotal,
+                        first_level_ancestor=ancestor,
+                        inherited_branch_color=branch_color,
                     )
 
                     # Add nested data to our lists
@@ -287,19 +367,59 @@ class PlotterMixin:
                     parents.extend(nested_parents)
                     values.extend(nested_values)
                     depths.extend(nested_depths)
+                    parent_values.extend(nested_parent_values)
+                    first_level_ancestors.extend(nested_first_level_ancestors)
+                    semantic_branch_colors.extend(nested_semantic_branch_colors)
 
-                elif isinstance(value, (int, float)):
-                    # This is a leaf node with a numeric value
-                    values.append(float(value))
-
-            return ids, labels, parents, values, depths
+            return (
+                ids,
+                labels,
+                parents,
+                values,
+                depths,
+                parent_values,
+                first_level_ancestors,
+                semantic_branch_colors,
+            )
 
         # Calculate total value for root node
         total_value = _calculate_subtotal(breakdown_dict)
 
+        if not breakdown_dict or total_value <= 0:
+            fig = go.Figure()
+            layout_defaults = dict(
+                title=dict(text=title, x=0.5, font=dict(size=18)),
+                annotations=[
+                    dict(
+                        text=f"No {title.lower()} data available",
+                        showarrow=False,
+                        x=0.5,
+                        y=0.5,
+                        xref="paper",
+                        yref="paper",
+                        font=dict(size=15, color="#64748B"),
+                    )
+                ],
+                paper_bgcolor="white",
+                plot_bgcolor="white",
+                margin=dict(t=64, r=16, b=16, l=16),
+            )
+            layout_defaults.update(kwargs)
+            fig.update_layout(**layout_defaults)
+            return fig
+
         # Prepare hierarchical data starting with root
-        ids, labels, parents, values, depths = _prepare_sunburst_data(
-            breakdown_dict, parent_id=""
+        (
+            ids,
+            labels,
+            parents,
+            values,
+            depths,
+            parent_values,
+            first_level_ancestors,
+            semantic_branch_colors,
+        ) = _prepare_sunburst_data(
+            breakdown_dict, parent_id="", parent_total=total_value
         )
 
         # Add root node at the beginning
@@ -308,6 +428,9 @@ class PlotterMixin:
         parents.insert(0, "")
         values.insert(0, total_value)
         depths.insert(0, 0)
+        parent_values.insert(0, total_value)
+        first_level_ancestors.insert(0, None)
+        semantic_branch_colors.insert(0, None)
 
         # Update parent references to point to root
         for i in range(1, len(parents)):
@@ -325,28 +448,23 @@ class PlotterMixin:
         
         # Assign colors to all nodes
         marker_colors = []
-        max_depth = max(depths) if depths else 0
         
-        for i, (node_id, label, parent, depth) in enumerate(zip(ids, labels, parents, depths)):
+        for label, depth, ancestor_label, branch_color in zip(
+            labels,
+            depths,
+            first_level_ancestors,
+            semantic_branch_colors,
+        ):
             if depth == 0:
                 # Root node - use neutral color
-                marker_colors.append('#CCCCCC')
+                marker_colors.append('#E2E8F0')
+            elif branch_color:
+                lighten_factor = max(0.0, min(0.78, (depth - 2) * 0.22))
+                marker_colors.append(PlotterMixin.lighten_color(branch_color, lighten_factor))
             elif depth == 1:
                 # First level - use assigned base color
                 marker_colors.append(key_to_base_color[label])
             else:
-                # Deeper levels - find the first-level ancestor and lighten its color
-                # Trace back through parents to find first-level ancestor
-                current_parent = parent
-                ancestor_label = None
-                
-                for j, (check_id, check_label, check_depth) in enumerate(zip(ids, labels, depths)):
-                    if check_id == current_parent:
-                        if check_depth == 1:
-                            ancestor_label = check_label
-                            break
-                        current_parent = parents[j]
-                
                 if ancestor_label and ancestor_label in key_to_base_color:
                     base_color = key_to_base_color[ancestor_label]
                     # Lighten based on depth (depth 2 gets 0.3, depth 3 gets 0.5, depth 4 gets 0.7, etc.)
@@ -357,36 +475,52 @@ class PlotterMixin:
                     # Fallback to neutral color
                     marker_colors.append('#DDDDDD')
 
+        display_labels = [_wrap_label(label) for label in labels]
+
         # Create custom hover text with percentages
         hover_text = []
-        for i, (label, value) in enumerate(zip(labels, values)):
+        for label, value, parent_value in zip(labels, values, parent_values):
+            total_percentage = (value / total_value * 100) if total_value > 0 else 0
+            parent_percentage = (value / parent_value * 100) if parent_value > 0 else 0
             if label == root_label:
                 unit_str = f" {unit}" if unit else ""
                 hover_text.append(f"<b>{root_label}</b><br>{value:.2f}{unit_str}")
             else:
-                percentage = (value / total_value * 100) if total_value > 0 else 0
                 unit_str = f" {unit}" if unit else ""
                 hover_text.append(
-                    f"<b>{label}</b><br>{value:.2f}{unit_str}<br>{percentage:.1f}% of total"
+                    f"<b>{label}</b><br>"
+                    f"{value:.2f}{unit_str}<br>"
+                    f"{parent_percentage:.1f}% of parent<br>"
+                    f"{total_percentage:.1f}% of total"
                 )
 
         # Create the sunburst plot
         fig = go.Figure(
             go.Sunburst(
                 ids=ids,
-                labels=labels,
+                labels=display_labels,
                 parents=parents,
                 values=values,
                 branchvalues="total",
                 hovertemplate="%{customdata}<extra></extra>",
                 customdata=hover_text,
-                marker=dict(colors=marker_colors),
+                marker=dict(colors=marker_colors, line=dict(color="white", width=1.5)),
+                insidetextorientation="horizontal",
+                textinfo=textinfo,
             )
         )
 
-        fig.update_layout(
-            title=dict(text=title, x=0.5, font=dict(size=16)), font_size=12, **kwargs
+        layout_defaults = dict(
+            title=dict(text=title, x=0.5, font=dict(size=18)),
+            font_size=13,
+            margin=dict(t=64, r=16, b=16, l=16),
+            uniformtext=dict(minsize=9, mode="show"),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
+            transition=dict(duration=350, easing="cubic-in-out"),
         )
+        layout_defaults.update(kwargs)
+        fig.update_layout(**layout_defaults)
 
         return fig
 
