@@ -39,9 +39,19 @@ class PlotterMixin:
         zerolinewidth=1,
     )
 
+    # Axis pairing conventions (equal aspect needs exactly one anchor per
+    # figure, otherwise plotly.js hits a circular constraint and drops one):
+    #   top-down (X, Y):   xaxis=SCHEMATIC_X_AXIS (anchors y), yaxis=SCHEMATIC_Y_AXIS
+    #   side     (Y, Z):   xaxis=SCHEMATIC_Y_AXIS, yaxis=SCHEMATIC_Z_AXIS (anchors x)
+    #   spiral   (X, Z):   xaxis=SCHEMATIC_X_AXIS_UNANCHORED, yaxis=SCHEMATIC_Z_AXIS
     SCHEMATIC_X_AXIS = dict(
         zeroline=False,
         scaleanchor="y",
+        title="X (mm)"
+    )
+
+    SCHEMATIC_X_AXIS_UNANCHORED = dict(
+        zeroline=False,
         title="X (mm)"
     )
 
@@ -108,6 +118,35 @@ class PlotterMixin:
             fig.update_layout(**layout_defaults)
         return fig
 
+    @staticmethod
+    def apply_plot_layout(
+        fig: go.Figure,
+        defaults: dict[str, Any] | None = None,
+        overrides: dict[str, Any] | None = None,
+    ) -> go.Figure:
+        """Apply layout *defaults* merged with caller *overrides* (caller wins).
+
+        The safe replacement for the ``update_layout(key=kwargs.get("key"),
+        **kwargs)`` pattern, which raises ``TypeError`` when the caller passes
+        one of the defaulted keys. Also sets ``uirevision`` (unless the caller
+        provides one) so Dash preserves zoom/pan and legend-toggle state when
+        a callback regenerates the figure.
+
+        Args:
+            fig: Figure to style.
+            defaults: Layout settings the plot method wants.
+            overrides: Caller-supplied layout overrides (typically the plot
+                method's ``**kwargs``); take precedence over *defaults*.
+
+        Returns:
+            The same figure, for chaining.
+        """
+        layout = dict(defaults or {})
+        layout.update(overrides or {})
+        layout.setdefault("uirevision", True)
+        fig.update_layout(**layout)
+        return fig
+
     # ── Component trace (existing) ────────────────────────────────────
 
     @staticmethod
@@ -169,6 +208,9 @@ class PlotterMixin:
         y_coords = combined_coords[:, 1] * unit_conversion_factor
         z_coords = combined_coords[:, 2] * unit_conversion_factor
         
+        # Component name on hover instead of the default raw coordinates
+        hovertemplate = f"<b>{name}</b><extra></extra>"
+
         # Create trace
         if gl:
             return go.Scattergl(
@@ -181,6 +223,7 @@ class PlotterMixin:
                 fillcolor=color_func(components[0]),
                 legendgroup=name,
                 showlegend=True,
+                hovertemplate=hovertemplate,
             )
         else:
             return go.Scatter(
@@ -193,6 +236,7 @@ class PlotterMixin:
                 fillcolor=color_func(components[0]),
                 legendgroup=name,
                 showlegend=True,
+                hovertemplate=hovertemplate,
             )
 
     @staticmethod
@@ -230,12 +274,9 @@ class PlotterMixin:
             Plotly sunburst figure.
         """
         
-        # Default Plotly colorway if none provided
+        # Shared STEER palette unless the caller provides one
         if colorway is None:
-            colorway = [
-                '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A',
-                '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'
-            ]
+            colorway = list(PlotterMixin.DEFAULT_PALETTE)
 
         def _calculate_subtotal(data: dict[str, Any]) -> float:
             """Calculate the total value for a dictionary (sum of all nested numeric values)"""
@@ -404,9 +445,7 @@ class PlotterMixin:
                 plot_bgcolor="white",
                 margin=dict(t=64, r=16, b=16, l=16),
             )
-            layout_defaults.update(kwargs)
-            fig.update_layout(**layout_defaults)
-            return fig
+            return PlotterMixin.apply_plot_layout(fig, layout_defaults, kwargs)
 
         # Prepare hierarchical data starting with root
         (
@@ -519,10 +558,7 @@ class PlotterMixin:
             plot_bgcolor="white",
             transition=dict(duration=350, easing="cubic-in-out"),
         )
-        layout_defaults.update(kwargs)
-        fig.update_layout(**layout_defaults)
-
-        return fig
+        return PlotterMixin.apply_plot_layout(fig, layout_defaults, kwargs)
 
     # ── Generic statistical plots ─────────────────────────────────────
 
