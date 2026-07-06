@@ -70,8 +70,46 @@ class TestAxisConfigs:
     def test_schematic_x_axis_has_anchor(self):
         assert "scaleanchor" in PlotterMixin.SCHEMATIC_X_AXIS
 
+    def test_schematic_x_axis_unanchored_has_no_anchor(self):
+        assert "scaleanchor" not in PlotterMixin.SCHEMATIC_X_AXIS_UNANCHORED
+        assert PlotterMixin.SCHEMATIC_X_AXIS_UNANCHORED["title"] == "X (mm)"
+
     def test_bottom_legend(self):
         assert PlotterMixin.BOTTOM_LEGEND["orientation"] == "h"
+
+
+class TestApplyPlotLayout:
+
+    def _figure(self):
+        import plotly.graph_objects as go
+
+        return go.Figure()
+
+    def test_defaults_applied(self):
+        fig = PlotterMixin.apply_plot_layout(
+            self._figure(), defaults={"paper_bgcolor": "white"}
+        )
+        assert fig.layout.paper_bgcolor == "white"
+
+    def test_override_wins_without_crashing(self):
+        # The old ``kwargs.get(...) + **kwargs`` pattern raised TypeError here.
+        fig = PlotterMixin.apply_plot_layout(
+            self._figure(),
+            defaults={"paper_bgcolor": "white", "title": "Default"},
+            overrides={"paper_bgcolor": "black", "title": "Custom"},
+        )
+        assert fig.layout.paper_bgcolor == "black"
+        assert fig.layout.title.text == "Custom"
+
+    def test_uirevision_set_by_default(self):
+        fig = PlotterMixin.apply_plot_layout(self._figure())
+        assert fig.layout.uirevision is True
+
+    def test_uirevision_override_respected(self):
+        fig = PlotterMixin.apply_plot_layout(
+            self._figure(), overrides={"uirevision": "cell-42"}
+        )
+        assert fig.layout.uirevision == "cell-42"
 
 
 class TestPlotBreakdownSunburst:
@@ -177,3 +215,21 @@ class TestPlotBreakdownSunburst:
 
         assert fig.layout.paper_bgcolor == "#f8fafc"
         assert fig.layout.margin.t == 10
+
+    def test_default_colorway_is_shared_palette(self):
+        data = {"Alpha": 1, "Beta": 2}
+        fig = PlotterMixin.plot_breakdown_sunburst(data)
+
+        sunburst = fig.data[0]
+        first_level_colors = {
+            color
+            for label, color in zip(sunburst.ids, sunburst.marker.colors)
+            if label in ("Alpha", "Beta")
+        }
+
+        assert first_level_colors <= set(PlotterMixin.DEFAULT_PALETTE)
+
+    def test_uirevision_set_for_dash_state_preservation(self):
+        fig = PlotterMixin.plot_breakdown_sunburst({"A": 1})
+
+        assert fig.layout.uirevision is True
