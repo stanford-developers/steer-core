@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.20] - 2026-08-10
+
+### Changed
+- `CoordinateMixin.get_radius_of_points` is ~10-25x faster on dense point
+  clouds: inputs above 4096 points are reduced to their outer rim (max-radius
+  candidates per angular bin around the centroid) before the shapely
+  minimum-bounding-circle call, and the redundant `pd.isna` scan on float
+  arrays was removed. Results are identical to sub-micrometre precision for
+  star-shaped clouds such as jelly-roll cross-sections.
+
 ## [0.2.18] - 2026-06-10
 
 ### Changed
