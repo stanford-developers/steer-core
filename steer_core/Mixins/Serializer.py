@@ -14,19 +14,110 @@ from enum import Enum
 # Patch msgpack for numpy support once at module import
 m.patch()
 
-# Module-level cache for imported modules (avoids repeated importlib calls)
+# Module-level cache for imported modules (avoids repeated importlib calls).
+# Only ever holds paths that passed _get_class's allowlist + type checks, so a
+# cache hit is safe to return without re-validating.
 _module_cache: dict[str, type] = {}
 
 T = TypeVar('T', bound='SerializerMixin')
 
 
+class UnsafeClassPathError(ValueError):
+    """A serialized payload named a class that may not be reconstructed.
+
+    Deserialization resolves class paths taken *from the payload*, so an
+    untrusted file would otherwise choose which module gets imported and which
+    callable gets invoked. Raised as a ``ValueError`` subclass so existing
+    callers that catch ``ValueError`` around ``deserialize`` keep working.
+    """
+
+
+# Top-level packages whose classes may be reconstructed from a serialized
+# payload. Deserialization is a code-execution boundary: ``_get_class`` imports
+# the named module and the ``__enum__`` branch *calls* the resolved object with a
+# value from the payload, so without this gate a crafted file could reach any
+# importable callable (e.g. ``os.system``). Every class in every cell shipped in
+# the OpenCell database resolves under ``steer_opencell_design``; the sibling
+# roots are listed because steer-core is shared across the STEER packages.
+_ALLOWED_CLASS_ROOTS: set[str] = {
+    'steer_core',
+    'steer_materials',
+    'steer_opencell_design',
+}
+
+
+def allow_class_roots(*roots: str) -> None:
+    """Permit ``roots`` as top-level packages in serialized class paths.
+
+    For downstream packages that define their own ``SerializerMixin`` subclasses
+    and need them to survive a round trip. Keep the set as small as possible —
+    every added root widens the deserialization trust boundary.
+    """
+    _ALLOWED_CLASS_ROOTS.update(roots)
+
+
 def _get_class(class_path: str) -> type:
-    """Get class from module path with caching."""
-    if class_path not in _module_cache:
-        module_name, class_name = class_path.rsplit('.', 1)
-        module = importlib.import_module(module_name)
-        _module_cache[class_path] = getattr(module, class_name)
-    return _module_cache[class_path]
+    """Resolve an allowlisted class from a serialized module path, with caching.
+
+    Raises:
+        UnsafeClassPathError: If ``class_path`` is malformed, rooted outside
+            :data:`_ALLOWED_CLASS_ROOTS`, or does not name a class.
+    """
+    cached = _module_cache.get(class_path)
+    if cached is not None:
+        return cached
+
+    if not isinstance(class_path, str) or '.' not in class_path:
+        raise UnsafeClassPathError(
+            f"Serialized data named a malformed class path: {class_path!r}"
+        )
+
+    root = class_path.split('.', 1)[0]
+    if root not in _ALLOWED_CLASS_ROOTS:
+        raise UnsafeClassPathError(
+            f"Serialized data named a class outside the allowed packages: "
+            f"{class_path!r} (allowed roots: {sorted(_ALLOWED_CLASS_ROOTS)})"
+        )
+
+    module_name, class_name = class_path.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    obj = getattr(module, class_name, None)
+    if not isinstance(obj, type):
+        # Guards against a path that resolves to a plain function or any other
+        # callable — only classes are ever serialized.
+        raise UnsafeClassPathError(
+            f"Serialized data named {class_path!r}, which is not a class."
+        )
+
+    _module_cache[class_path] = obj
+    return obj
+
+
+def _get_serializable_class(class_path: str) -> type:
+    """Resolve a class path that must name a :class:`SerializerMixin` subclass."""
+    obj = _get_class(class_path)
+    if not issubclass(obj, SerializerMixin):
+        raise UnsafeClassPathError(
+            f"Serialized data named {class_path!r} as an object, but it is not a "
+            "SerializerMixin subclass."
+        )
+    return obj
+
+
+def _get_enum_class(class_path: str) -> type:
+    """Resolve a class path that must name an :class:`~enum.Enum` subclass.
+
+    The ``__enum__`` branch calls the resolved class with a value from the
+    payload, so restricting it to real enums is what makes that call safe:
+    ``SomeEnum(value)`` is a member lookup, not arbitrary construction.
+    """
+    obj = _get_class(class_path)
+    if not issubclass(obj, Enum):
+        raise UnsafeClassPathError(
+            f"Serialized data named {class_path!r} as an enum, but it is not an "
+            "Enum subclass."
+        )
+    return obj
 
 
 class SerializerMixin:
@@ -240,7 +331,7 @@ class SerializerMixin:
         
         # Use stored class information if available
         if '_class' in obj_dict:
-            actual_cls = _get_class(obj_dict['_class'])
+            actual_cls = _get_serializable_class(obj_dict['_class'])
             # Remove class marker before reconstructing
             obj_data = {k: v for k, v in obj_dict.items() if k != '_class'}
             return actual_cls._from_dict(obj_data)
@@ -267,14 +358,14 @@ class SerializerMixin:
             # Check special markers in priority order (most common first)
             if '__object__' in value:
                 # Reconstruct regular object using cached class lookup
-                obj_class = _get_class(value['_class'])
+                obj_class = _get_serializable_class(value['_class'])
                 obj_data = {k: v for k, v in value.items() if k not in ('__object__', '_class')}
                 return obj_class._from_dict(obj_data)
             elif '__datetime__' in value:
                 return datetime.fromisoformat(value['__datetime__'])
             elif '__enum__' in value:
                 # Reconstruct enum using cached class lookup
-                enum_class = _get_class(value['class'])
+                enum_class = _get_enum_class(value['class'])
                 return enum_class(value['value'])
             elif '__tuple__' in value:
                 # Recursively reconstruct tuple items
