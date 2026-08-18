@@ -182,8 +182,8 @@ L_TO_M3 = DM_TO_M**3  # Derived from length (1e-3)
 M3_TO_L = 1.0 / L_TO_M3
 GAL_TO_L = 3.78541
 L_TO_GAL = 1 / 3.78541
-MMGAL_TO_GAL = 1e-6
-GAL_TO_MMGAL = 1e6
+MMGAL_TO_GAL = 1e6
+GAL_TO_MMGAL = 1e-6
 
 # Composite energy conversions
 ENERGY_CONVERSION_FACTOR = S_TO_H                               # J/s → Wh
