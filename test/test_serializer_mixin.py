@@ -6,11 +6,22 @@
 from datetime import datetime
 from enum import Enum
 
+import msgpack
 import numpy as np
 import pandas as pd
 import pytest
 
-from steer_core.Mixins.Serializer import SerializerMixin
+from steer_core.Mixins.Serializer import (
+    SerializerMixin,
+    UnsafeClassPathError,
+    allow_class_roots,
+)
+
+# Deserialization only reconstructs classes rooted in an allowlisted package (see
+# Serializer._ALLOWED_CLASS_ROOTS). The fixtures below live in this test module,
+# so register its own root — the same hook a downstream package uses for its own
+# SerializerMixin subclasses.
+allow_class_roots(__name__.split(".", 1)[0])
 
 
 class Color(Enum):
@@ -115,6 +126,101 @@ class TestSerializeNestedObjects:
         restored = SimpleSerializable.deserialize(data)
         assert restored._child._name == "inner"
         assert restored._child._value == pytest.approx(1.0)
+
+
+class TestUntrustedPayloadRejection:
+    """Deserialization must not be a code-execution sink.
+
+    ``deserialize`` resolves class paths taken *from the payload*, so an
+    untrusted ``.ocd`` file would otherwise choose which module gets imported —
+    and the ``__enum__`` branch *calls* the resolved object with a payload value,
+    which reaches any importable callable. These tests pin the allowlist and the
+    type checks that close that.
+    """
+
+    @staticmethod
+    def _payload(obj_dict) -> bytes:
+        """Pack ``obj_dict`` into an uncompressed serialized payload."""
+        return SerializerMixin._MARKER_NONE + msgpack.packb(
+            obj_dict, use_bin_type=True
+        )
+
+    def test_enum_branch_cannot_call_arbitrary_callable(self, tmp_path):
+        """The classic gadget: ``{"__enum__": ..., "class": "os.system"}``."""
+        marker = tmp_path / "pwned"
+        payload = self._payload(
+            {
+                "_class": f"{__name__}.SimpleSerializable",
+                "_name": {
+                    "__enum__": True,
+                    "class": "os.system",
+                    "value": f"touch {marker}",
+                },
+            }
+        )
+        with pytest.raises(UnsafeClassPathError, match="outside the allowed packages"):
+            SerializerMixin.deserialize(payload)
+        assert not marker.exists(), "payload executed despite being rejected"
+
+    def test_enum_branch_rejects_allowlisted_non_enum(self):
+        """An allowlisted root is not enough — it must actually be an Enum."""
+        payload = self._payload(
+            {
+                "_class": f"{__name__}.SimpleSerializable",
+                "_name": {
+                    "__enum__": True,
+                    "class": f"{__name__}.SimpleSerializable",
+                    "value": "anything",
+                },
+            }
+        )
+        with pytest.raises(UnsafeClassPathError, match="not an Enum subclass"):
+            SerializerMixin.deserialize(payload)
+
+    def test_top_level_class_outside_allowlist_is_rejected(self):
+        payload = self._payload({"_class": "subprocess.Popen", "_name": "x"})
+        with pytest.raises(UnsafeClassPathError, match="outside the allowed packages"):
+            SerializerMixin.deserialize(payload)
+
+    def test_nested_object_outside_allowlist_is_rejected(self):
+        payload = self._payload(
+            {
+                "_class": f"{__name__}.SimpleSerializable",
+                "_child": {"__object__": True, "_class": "subprocess.Popen"},
+            }
+        )
+        with pytest.raises(UnsafeClassPathError, match="outside the allowed packages"):
+            SerializerMixin.deserialize(payload)
+
+    def test_object_branch_rejects_allowlisted_non_serializable(self):
+        """An allowlisted class that is not a SerializerMixin has no _from_dict."""
+        payload = self._payload({"_class": f"{__name__}.Color", "_name": "x"})
+        with pytest.raises(UnsafeClassPathError, match="not a SerializerMixin"):
+            SerializerMixin.deserialize(payload)
+
+    def test_non_class_path_is_rejected(self):
+        """A path resolving to a plain function, not a class."""
+        payload = self._payload({"_class": "steer_core.Mixins.Serializer._get_class"})
+        with pytest.raises(UnsafeClassPathError, match="not a class"):
+            SerializerMixin.deserialize(payload)
+
+    @pytest.mark.parametrize("class_path", ["", "os", "nodots", 42, None])
+    def test_malformed_class_path_is_rejected(self, class_path):
+        payload = self._payload({"_class": class_path})
+        with pytest.raises(UnsafeClassPathError):
+            SerializerMixin.deserialize(payload)
+
+    def test_unsafe_error_is_a_value_error(self):
+        """Callers that already catch ValueError around deserialize keep working."""
+        assert issubclass(UnsafeClassPathError, ValueError)
+
+    def test_allowlist_does_not_break_legitimate_round_trip(self):
+        """The positive control for all of the above."""
+        obj = SimpleSerializable("real", 1.5)
+        obj._color = Color.BLUE
+        restored = SimpleSerializable.deserialize(obj.serialize())
+        assert restored._name == "real"
+        assert restored._color is Color.BLUE
 
 
 class TestCompressionMarkers:

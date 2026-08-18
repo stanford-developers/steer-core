@@ -19,6 +19,32 @@ class CoordinateMixin:
         'xz': (0, 2),
         'yz': (1, 2),
     }
+    # Above this point count, prefilter to the outer rim before the (expensive)
+    # shapely minimum_bounding_circle call. See ``_outer_rim_candidates``.
+    _MBC_PREFILTER_THRESHOLD = 4096
+    _MBC_PREFILTER_BINS = 2048
+
+    @staticmethod
+    def _outer_rim_candidates(points: np.ndarray, n_bins: int) -> np.ndarray:
+        """Reduce a dense point cloud to its outer rim for bounding-circle work.
+
+        Bins points by angle around the centroid and keeps, per bin, the
+        points at maximal distance from the centroid. For star-shaped clouds
+        (spiral / racetrack cross-sections) this retains all convex-hull
+        vertices up to a sub-micrometre discretization error, while cutting
+        the point count from tens of thousands to at most ``n_bins``.
+        """
+        center = points.mean(axis=0)
+        d = points - center
+        r2 = d[:, 0] ** 2 + d[:, 1] ** 2
+        angles = np.arctan2(d[:, 1], d[:, 0])
+        bins = ((angles + np.pi) * (n_bins / (2.0 * np.pi))).astype(np.intp)
+        np.clip(bins, 0, n_bins - 1, out=bins)
+        best_r2 = np.full(n_bins, -1.0)
+        np.maximum.at(best_r2, bins, r2)
+        keep = r2 >= best_r2[bins] - 1e-30
+        return points[keep]
+
     @staticmethod
     def get_radius_of_points(coords: np.ndarray) -> Tuple[float, Tuple[float, float]]:
         """Calculate the radius of a spiral given its coordinates.
@@ -32,13 +58,29 @@ class CoordinateMixin:
         Raises:
             ValueError: If input coordinates are invalid or insufficient valid points.
         """
-        # Filter out rows with NaN or None values
-        valid_mask = ~(np.isnan(coords).any(axis=1) | pd.isna(coords).any(axis=1))
-        valid_coords = coords[valid_mask]
-        
+        coords_arr = np.asarray(coords)
+        if coords_arr.dtype == object:
+            # Rare path: object arrays may contain ``None``; normalize to NaN.
+            coords_arr = np.where(pd.isna(coords_arr), np.nan, coords_arr).astype(
+                np.float64
+            )
+
+        valid_mask = ~np.isnan(coords_arr).any(axis=1)
+        valid_coords = coords_arr[valid_mask]
+
         if len(valid_coords) < 3:
             raise ValueError(f"Insufficient valid coordinates for polygon creation. Need at least 3, got {len(valid_coords)}")
-        
+
+        # The minimum bounding circle depends only on the outermost points, so
+        # a dense cloud can be reduced to its outer rim first. This turns the
+        # shapely call from O(N) on tens of thousands of points into O(bins).
+        if len(valid_coords) > CoordinateMixin._MBC_PREFILTER_THRESHOLD:
+            rim = CoordinateMixin._outer_rim_candidates(
+                valid_coords, CoordinateMixin._MBC_PREFILTER_BINS
+            )
+            if len(rim) >= 3:
+                valid_coords = rim
+
         polygon = Polygon(valid_coords)
         circle = minimum_bounding_circle(polygon)
         center = circle.centroid
