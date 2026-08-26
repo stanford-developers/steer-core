@@ -252,15 +252,17 @@ class DunderMixin:
         return True
     
     def __hash__(self):
-        """Hash based on object identity.
+        """Return a stable hash compatible with value-based equality.
 
-        Because the objects using this mixin are mutable, a content-based
-        hash would be unstable.  Using ``id()`` means that two distinct
-        objects that compare equal via ``__eq__`` will have different
-        hashes -- avoid using these objects as ``set`` members or ``dict``
-        keys when value-based identity matters.
+        Instances using this mixin are mutable, so hashing their property
+        values would make their hash unstable.  A constant hash preserves
+        the requirement that objects which compare equal have equal hashes
+        while allowing ``dict`` and ``set`` lookups to use ``__eq__``.
+
+        The tradeoff is that hash-based lookups among these objects are
+        linear rather than constant-time.
         """
-        return hash(id(self))
+        return 0
     
     def __str__(self):
         """
@@ -276,4 +278,3 @@ class DunderMixin:
         Official string representation of the instance.
         """
         return self.__str__()
-
