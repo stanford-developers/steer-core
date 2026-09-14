@@ -124,6 +124,29 @@ class TestValidatePositiveFloat:
     def test_numpy_int64(self):
         ValidationMixin.validate_positive_float(np.int64(5), "val")
 
+    def test_nan_raises(self):
+        with pytest.raises(ValueError):
+            ValidationMixin.validate_positive_float(float("nan"), "val")
+
+    def test_infinity_raises(self):
+        with pytest.raises(ValueError):
+            ValidationMixin.validate_positive_float(float("inf"), "val")
+
+    def test_negative_infinity_raises(self):
+        with pytest.raises(ValueError):
+            ValidationMixin.validate_positive_float(float("-inf"), "val")
+
+    def test_numpy_nan_raises(self):
+        with pytest.raises(ValueError):
+            ValidationMixin.validate_positive_float(np.float64("nan"), "val")
+
+    def test_strictly_rejects_zero(self):
+        with pytest.raises(ValueError):
+            ValidationMixin.validate_positive_float(0.0, "val", strictly=True)
+
+    def test_strictly_accepts_positive(self):
+        ValidationMixin.validate_positive_float(5.0, "val", strictly=True)
+
 
 class TestValidatePositiveInt:
 

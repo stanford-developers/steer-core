@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.23] - 2026-09-14
+
+### Fixed
+- **`ValidationMixin.validate_positive_float` accepted `NaN` and `inf`.** The
+  check was `if value < 0`, which both slip past (`nan < 0` is False), so a
+  non-finite value passed validation and was committed to whatever property was
+  being set — poisoning every quantity derived from it with no exception
+  anywhere. Non-finite values now raise `ValueError`. Downstream: any setter
+  that reads a cached float and scales it (e.g.
+  `_Electrode.reversible_areal_capacity` in `steer-opencell-design`) could
+  silently store `nan`.
+
+### Added
+- `validate_positive_float(value, name, strictly=False)` takes a `strictly`
+  flag, mirroring `validate_positive_int`. With `strictly=True` a value of 0.0
+  is rejected, which callers need when zero would brick the property being set
+  (a zeroed denominator that can never be scaled back up). The default stays
+  non-strict (`>= 0`) because many callers legitimately pass 0.0 — zero
+  insulation width, zero gap, zero electrolyte overfill.
+
 ## [0.2.22] - 2026-08-18
 
 ### Fixed
