@@ -33,12 +33,17 @@ class TestDunderEquality:
 
 class TestDunderHash:
 
-    def test_hash_is_identity_based(self, sample_obj):
-        assert hash(sample_obj) == hash(id(sample_obj))
+    def test_equal_objects_have_equal_hashes(self, sample_obj):
+        equivalent = SampleObject(name="test", value=1.0)
 
-    def test_different_objects_different_hash(self, sample_obj):
-        other = SampleObject()
-        assert hash(sample_obj) != hash(other)
+        assert sample_obj == equivalent
+        assert hash(sample_obj) == hash(equivalent)
+
+    def test_equivalent_object_resolves_dict_key(self, sample_obj):
+        equivalent = SampleObject(name="test", value=1.0)
+        values = {sample_obj: 7}
+
+        assert values[equivalent] == 7
 
 
 class TestDunderStr:

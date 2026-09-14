@@ -135,20 +135,41 @@ class ValidationMixin:
             raise TypeError("All coordinates in datum must be numbers.")
 
     @staticmethod
-    def validate_positive_float(value: float, name: str) -> None:
+    def validate_positive_float(value: float, name: str, strictly: bool = False) -> None:
         """Validate that a value is a positive float.
 
         Args:
             value: The value to validate.
             name: The name of the parameter for error messages.
+            strictly: If True, value must be strictly positive (> 0). Defaults to
+                False (>= 0), because many callers legitimately pass 0.0 (zero
+                insulation width, zero gap, zero overfill). Mirrors
+                :meth:`validate_positive_int`, which defaults to strict because
+                its callers are counts.
 
         Raises:
-            ValueError: If the value is not a positive float.
+            TypeError: If the value is not a number.
+            ValueError: If the value is NaN or infinite, or does not meet the
+                positivity requirement.
+
+        Examples:
+            >>> ValidationMixin.validate_positive_float(5.0, 'width')                   # OK
+            >>> ValidationMixin.validate_positive_float(0.0, 'width')                   # OK (non-strict default)
+            >>> ValidationMixin.validate_positive_float(0.0, 'width', strictly=True)    # ValueError
+            >>> ValidationMixin.validate_positive_float(-1.0, 'width')                  # ValueError
+            >>> ValidationMixin.validate_positive_float(float('nan'), 'width')          # ValueError
+            >>> ValidationMixin.validate_positive_float(float('inf'), 'width')          # ValueError
         """
         if not isinstance(value, (int, float, np.int64, np.float64)):
             raise TypeError(f"{name} must be a number. Provided: {type(value).__name__}.")
-        if value < 0:
-            raise ValueError(f"{name} must be a positive float. Provided: {value}.")
+        if not np.isfinite(value):
+            raise ValueError(f"{name} must be a finite number. Provided: {value}.")
+        if strictly:
+            if value <= 0:
+                raise ValueError(f"{name} must be a strictly positive float (> 0). Provided: {value}.")
+        else:
+            if value < 0:
+                raise ValueError(f"{name} must be a positive float. Provided: {value}.")
 
     @staticmethod
     def validate_positive_int(value: int, name: str, strictly: bool = True) -> None:
