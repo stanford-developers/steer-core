@@ -11,10 +11,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from steer_core.Mixins import Serializer
+from steer_core.Mixins.Propagation import PropagationMixin
 from steer_core.Mixins.Serializer import (
+    MissingClassError,
+    SchemaVersionError,
     SerializerMixin,
     UnsafeClassPathError,
     allow_class_roots,
+    register_class_alias,
 )
 
 # Deserialization only reconstructs classes rooted in an allowlisted package (see
@@ -253,3 +258,185 @@ class TestSerializeValue:
         s = SimpleSerializable()
         result = s._serialize_value([1, "two", 3.0])
         assert result == [1, "two", 3.0]
+
+
+class Holder(SerializerMixin):
+    """Holds one arbitrary value, to test how a value type round-trips."""
+
+    def __init__(self, value=None):
+        self.value = value
+
+
+class ParentHolder(PropagationMixin, SerializerMixin):
+    """A propagating object, to test that a class value is not given a parent."""
+
+    def __init__(self, value=None):
+        self._parent = None
+        self._value = value
+
+
+def _round_trip(value):
+    return Holder.deserialize(Holder(value).serialize()).value
+
+
+@pytest.fixture
+def clean_aliases():
+    """Restore the global alias table and class cache after a test."""
+    aliases = dict(Serializer._CLASS_ALIASES)
+    cache = dict(Serializer._module_cache)
+    yield
+    Serializer._CLASS_ALIASES.clear()
+    Serializer._CLASS_ALIASES.update(aliases)
+    Serializer._module_cache.clear()
+    Serializer._module_cache.update(cache)
+
+
+class TestTypeReferences:
+
+    def test_type_value_round_trips_as_the_same_class(self):
+        assert _round_trip(SimpleSerializable) is SimpleSerializable
+
+    def test_type_is_stored_as_a_path_not_as_code(self):
+        payload = Holder()._serialize_value(Color)
+        assert payload == {'__type__': f"{Color.__module__}.Color"}
+
+    def test_serializable_class_as_value_is_not_called(self):
+        # A SerializerMixin subclass has _to_dict, but as a class it must stay a reference
+        assert _round_trip([SimpleSerializable, Holder]) == [SimpleSerializable, Holder]
+
+    def test_classes_as_dict_keys(self):
+        labour = {SimpleSerializable: 1.5, Holder: 0.25}
+        assert _round_trip(labour) == labour
+
+    def test_tuple_and_enum_keys(self):
+        value = {(1, 2): "a", Color.RED: "b"}
+        assert _round_trip(value) == value
+
+    def test_type_outside_allowlist_is_rejected_on_load(self):
+        data = Holder(datetime).serialize()
+        with pytest.raises(UnsafeClassPathError):
+            Holder.deserialize(data)
+
+    def test_class_value_does_not_get_a_parent(self):
+        restored = ParentHolder.deserialize(ParentHolder(ParentHolder).serialize())
+        assert restored._value is ParentHolder
+
+
+class TestSets:
+
+    def test_set_round_trip(self):
+        value = {1, "two", Color.BLUE}
+        restored = _round_trip(value)
+        assert restored == value and type(restored) is set
+
+    def test_frozenset_of_types_round_trip(self):
+        value = frozenset({SimpleSerializable, Holder})
+        restored = _round_trip(value)
+        assert restored == value and type(restored) is frozenset
+
+    def test_equal_sets_give_equal_payloads(self):
+        first = Holder({"b", "a", "c"})._serialize_value({"b", "a", "c"})
+        second = Holder()._serialize_value({"c", "a", "b"})
+        assert first == second
+
+
+class TestClassAliases:
+
+    def test_old_path_loads_as_the_new_class(self, clean_aliases):
+        old = f"{__name__}.OldName"
+        register_class_alias(old, f"{__name__}.SimpleSerializable")
+        assert Serializer._get_class(old) is SimpleSerializable
+
+    def test_aliases_chain(self, clean_aliases):
+        register_class_alias(f"{__name__}.A", f"{__name__}.B")
+        register_class_alias(f"{__name__}.B", f"{__name__}.SimpleSerializable")
+        assert Serializer._get_class(f"{__name__}.A") is SimpleSerializable
+
+    def test_cycle_is_rejected(self, clean_aliases):
+        register_class_alias(f"{__name__}.A", f"{__name__}.B")
+        with pytest.raises(ValueError, match="cycle"):
+            register_class_alias(f"{__name__}.B", f"{__name__}.A")
+
+    def test_alias_target_is_still_allowlisted(self, clean_aliases):
+        register_class_alias(f"{__name__}.Old", "os.system")
+        with pytest.raises(UnsafeClassPathError):
+            Serializer._get_class(f"{__name__}.Old")
+
+    @pytest.mark.parametrize("path", ["", "nodot", None])
+    def test_malformed_alias_is_rejected(self, path, clean_aliases):
+        with pytest.raises(ValueError):
+            register_class_alias(path, f"{__name__}.SimpleSerializable")
+
+    def test_alias_replaces_a_cached_path(self, clean_aliases):
+        path = f"{__name__}.SimpleSerializable"
+        Serializer._get_class(path)
+        register_class_alias(path, f"{__name__}.Holder")
+        assert Serializer._get_class(path) is Holder
+
+
+class TestMissingClass:
+
+    def test_removed_class_names_the_path(self):
+        with pytest.raises(MissingClassError, match="register_class_alias"):
+            Serializer._get_class(f"{__name__}.RemovedClass")
+
+    def test_removed_module(self):
+        with pytest.raises(MissingClassError):
+            Serializer._get_class(f"{__name__}.removed_module.RemovedClass")
+
+    def test_missing_class_is_a_value_error(self):
+        assert issubclass(MissingClassError, ValueError)
+
+
+class Versioned(SerializerMixin):
+    """Version 2: ``length`` in m. Version 1 had ``length_mm``; version 0 had ``size_mm``."""
+
+    _schema_version = 2
+
+    def __init__(self, length=1.0):
+        self.length = length
+
+    @classmethod
+    def _migrate(cls, data, version):
+        if version < 1:
+            data['length_mm'] = data.pop('size_mm')
+        if version < 2:
+            data['length'] = data.pop('length_mm') / 1000
+        return data
+
+
+def _payload_of(obj_dict):
+    return SerializerMixin._MARKER_NONE + msgpack.packb(obj_dict, use_bin_type=True)
+
+
+class TestSchemaVersion:
+
+    def test_version_zero_is_not_written(self):
+        raw = msgpack.unpackb(SimpleSerializable().serialize(compress=False)[1:], raw=False)
+        assert '__schema_version__' not in raw
+
+    def test_current_version_is_written_and_loads(self):
+        raw = msgpack.unpackb(Versioned(2.0).serialize(compress=False)[1:], raw=False)
+        assert raw['__schema_version__'] == 2
+        assert Versioned.deserialize(Versioned(2.0).serialize()).length == 2.0
+
+    @pytest.mark.parametrize("version, attributes", [
+        (0, {'size_mm': 1500.0}),
+        (1, {'length_mm': 1500.0}),
+    ])
+    def test_older_payload_is_migrated(self, version, attributes):
+        payload = {'_class': f"{__name__}.Versioned", **attributes}
+        if version:
+            payload['__schema_version__'] = version
+        restored = Versioned.deserialize(_payload_of(payload))
+        assert restored.__dict__ == {'length': 1.5}
+
+    def test_nested_object_is_migrated(self):
+        nested = {'__object__': True, '_class': f"{__name__}.Versioned", 'size_mm': 500.0}
+        payload = {'_class': f"{__name__}.Holder", 'value': nested}
+        assert Holder.deserialize(_payload_of(payload)).value.length == 0.5
+
+    def test_newer_payload_is_rejected(self):
+        payload = {'_class': f"{__name__}.Versioned", '__schema_version__': 3, 'length': 1.0}
+        with pytest.raises(SchemaVersionError, match="version 3"):
+            Versioned.deserialize(_payload_of(payload))

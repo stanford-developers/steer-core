@@ -82,6 +82,15 @@ def propagating_setter(attr_name: str = None, deepcopy: bool = False):
     return decorator
 
 
+def _has_parent(value: Any) -> bool:
+    """Return True if ``value`` is an instance that can take a parent reference.
+
+    A class stored as a value (a type reference) also has ``_set_parent``, as an
+    unbound function. It must not be called.
+    """
+    return hasattr(value, '_set_parent') and not isinstance(value, type)
+
+
 class PropagationMixin:
     """
     Mixin providing update propagation through a hierarchical object tree.
@@ -320,21 +329,21 @@ class PropagationMixin:
             attr_name: The attribute name on this object that holds the value.
                 Used for setter-based propagation.
         """
-        if hasattr(value, '_set_parent'):
+        if _has_parent(value):
             value._set_parent(self, attr_name)
-        elif isinstance(value, (list, tuple)):
+        elif isinstance(value, (list, tuple, set, frozenset)):
             # For collections, items don't have a direct setter path
             for item in value:
-                if hasattr(item, '_set_parent'):
+                if _has_parent(item):
                     item._set_parent(self, attr_name)
         elif isinstance(value, dict):
             # Check both keys AND values - materials can be dict keys
             # For dict items, they don't have a direct setter path
             for item in value.keys():
-                if hasattr(item, '_set_parent'):
+                if _has_parent(item):
                     item._set_parent(self, attr_name)
             for item in value.values():
-                if hasattr(item, '_set_parent'):
+                if _has_parent(item):
                     item._set_parent(self, attr_name)
 
     def __deepcopy__(self, memo):
