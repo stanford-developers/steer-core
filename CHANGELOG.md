@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.25] - 2026-09-29
+
+### Added
+- **`SerializerMixin` stores classes as references.** A class value is saved
+  as `{'__type__': 'module.Class'}` and resolved through the allowlist;
+  previously it became `None` with no error. A class, an enum or a tuple can
+  now be a dict key.
+- `frozenset` round-trips (`__frozenset__`). Set items are now written in
+  sorted order, so equal sets give equal bytes. The 0.2.24 `__set__` payload
+  shape is unchanged.
+- `register_class_alias(old_path, new_path)` loads old payloads after a class
+  moves or is renamed. Aliases may chain; cycles are refused; the allowlist
+  check applies to the new path.
+- `_schema_version` / `_migrate(data, version)` on serializable classes. A
+  payload older than the class is migrated on load; a newer one raises
+  `SchemaVersionError`. Version 0 is not written, so existing payloads are
+  byte-identical.
+- A missing module or class raises `MissingClassError` naming the path.
+  Both new errors subclass `ValueError`.
+
+### Changed
+- `PropagationMixin` no longer calls `_set_parent` on a class value after a
+  load.
+
 ## [0.2.24] - 2026-09-18
 
 ### Added
