@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.26] - 2026-09-29
+
+### Security
+- **Remote code execution through msgpack deserialization.** `msgpack_numpy`'s
+  decoder calls `pickle.loads` on object-dtype (`kind == 'O'`) numpy arrays, and
+  `m.patch()` installs it as the global msgpack `object_hook`. So any
+  `msgpack.unpackb` in the process — including deserialization of an untrusted
+  payload such as an uploaded `.ocd` design — ran `pickle.loads`, which executes
+  arbitrary code, before any class-allowlist check. The patched reader also
+  wraps a caller-supplied `object_hook` and runs `decode` first, so a hook
+  cannot make unpack safe. Fixed by capturing the unpatched `msgpack.unpackb`
+  before `m.patch()` and re-overriding `msgpack.unpackb`/`loads` with a safe
+  reader that refuses object-dtype arrays (`UnsafeObjectArrayError`) and
+  delegates every other map to the normal decoder. Writing (`packb`) is
+  unchanged. No cell design uses object-dtype arrays.
+  
 ## [0.2.25] - 2026-09-29
 
 ### Added
