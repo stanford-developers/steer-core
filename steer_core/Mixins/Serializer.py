@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2024-2026 Stanford University
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import functools
 import importlib
 import msgpack
 import msgpack_numpy as m
@@ -11,8 +12,59 @@ from typing import TypeVar, Any
 from datetime import datetime, timedelta
 from enum import Enum
 
-# Patch msgpack for numpy support once at module import
+# Capture the unpatched msgpack reader BEFORE m.patch() replaces it. m.patch()
+# installs msgpack_numpy.decode as the global object_hook, and that decoder calls
+# pickle.loads on object-dtype ('O') numpy arrays. pickle.loads runs arbitrary
+# code, so an untrusted payload could execute code during unpack. The patched
+# reader also wraps any object_hook a caller passes (it runs decode *first*), so
+# a caller cannot make unpack safe by passing a hook — the reader itself must be
+# replaced. See _safe_unpackb below.
+_raw_unpackb = msgpack.unpackb
+
+# Patch msgpack for numpy support once at module import (encoding + decoding).
 m.patch()
+
+
+class UnsafeObjectArrayError(ValueError):
+    """A payload asked to decode an object-dtype ('O') numpy array.
+
+    That decode path calls ``pickle.loads``, which runs arbitrary code. No cell
+    design uses object-dtype arrays, so this shape only appears in a hostile
+    payload and is refused.
+    """
+
+
+def _safe_decode(obj: Any, chain: Any = None) -> Any:
+    """Object hook that decodes numeric numpy arrays but refuses object arrays.
+
+    ``msgpack_numpy.decode`` calls ``pickle.loads`` when a map declares an
+    object-dtype array (``b'kind' == b'O'``). This wrapper rejects that shape
+    before ``decode`` can reach the pickle branch, and delegates every other map
+    (numeric/void arrays, complex numbers, plain dicts) to the normal decoder.
+    """
+    if isinstance(obj, dict) and b'nd' in obj and obj.get(b'kind') == b'O':
+        raise UnsafeObjectArrayError(
+            "object-dtype ('O') numpy arrays are not allowed"
+        )
+    return m.decode(obj, chain=chain)
+
+
+def _safe_unpackb(packed: bytes, **kwargs: Any) -> Any:
+    """Drop-in replacement for the patched ``msgpack.unpackb`` that cannot pickle.
+
+    Uses the unpatched reader with :func:`_safe_decode` as the object hook, so
+    numeric numpy arrays still round-trip while the pickle path stays closed.
+    """
+    chain = kwargs.pop('object_hook', None)
+    kwargs['object_hook'] = functools.partial(_safe_decode, chain=chain)
+    return _raw_unpackb(packed, **kwargs)
+
+
+# Re-override the readers that m.patch() made unsafe. Writing (packb) is
+# unchanged, so serialization of numpy arrays still works. Every msgpack read in
+# the process now refuses object-dtype arrays instead of unpickling them.
+msgpack.unpackb = _safe_unpackb
+msgpack.loads = _safe_unpackb
 
 # Module-level cache for imported modules (avoids repeated importlib calls).
 # Only ever holds paths that passed _get_class's allowlist + type checks, so a
@@ -29,6 +81,25 @@ class UnsafeClassPathError(ValueError):
     untrusted file would otherwise choose which module gets imported and which
     callable gets invoked. Raised as a ``ValueError`` subclass so existing
     callers that catch ``ValueError`` around ``deserialize`` keep working.
+    """
+
+
+class MissingClassError(ValueError):
+    """A serialized payload named a class that the installed code does not have.
+
+    The payload stores a class as a reference (its module path), never as code.
+    When the class was moved or renamed after the payload was written, register
+    the old path with :func:`register_class_alias`. Raised as a ``ValueError``
+    subclass for the same reason as :class:`UnsafeClassPathError`.
+    """
+
+
+class SchemaVersionError(ValueError):
+    """A serialized payload is newer than the installed class can read.
+
+    The payload's ``__schema_version__`` is above the class's
+    ``_schema_version``, so it may hold attributes that this code does not know.
+    Update the package instead of loading a partial object.
     """
 
 
@@ -56,12 +127,56 @@ def allow_class_roots(*roots: str) -> None:
     _ALLOWED_CLASS_ROOTS.update(roots)
 
 
+# Old class path -> new class path, for classes that moved or were renamed after
+# payloads were written. Filled only by code (register_class_alias), never by a
+# payload, so the allowlist check applies to the new path only.
+_CLASS_ALIASES: dict[str, str] = {}
+
+
+def register_class_alias(old_path: str, new_path: str) -> None:
+    """Load payloads that name ``old_path`` as the class at ``new_path``.
+
+    Call it from the package that moved the class, at import time. Aliases
+    chain: ``a -> b`` and ``b -> c`` load ``a`` as ``c``.
+
+    Raises:
+        ValueError: If a path is malformed, or the alias would make a cycle.
+    """
+    for path in (old_path, new_path):
+        if not isinstance(path, str) or '.' not in path:
+            raise ValueError(f"Class paths must be dotted module paths, got {path!r}")
+    path = new_path
+    while path is not None:
+        if path == old_path:
+            raise ValueError(f"Alias {old_path!r} -> {new_path!r} makes a cycle")
+        path = _CLASS_ALIASES.get(path)
+    _CLASS_ALIASES[old_path] = new_path
+    # A cached path can sit anywhere on a chain that this alias extends
+    _module_cache.clear()
+
+
+def _resolve_alias(class_path: str) -> str:
+    """Follow the alias chain from ``class_path`` to its current path.
+
+    ``register_class_alias`` refuses cycles, so the chain always ends.
+    """
+    while class_path in _CLASS_ALIASES:
+        class_path = _CLASS_ALIASES[class_path]
+    return class_path
+
+
+def _class_path(cls: type) -> str:
+    """Return the reference that a payload stores for ``cls``."""
+    return f"{cls.__module__}.{cls.__name__}"
+
+
 def _get_class(class_path: str) -> type:
     """Resolve an allowlisted class from a serialized module path, with caching.
 
     Raises:
         UnsafeClassPathError: If ``class_path`` is malformed, rooted outside
             :data:`_ALLOWED_CLASS_ROOTS`, or does not name a class.
+        MissingClassError: If the module or the class no longer exists.
     """
     cached = _module_cache.get(class_path)
     if cached is not None:
@@ -72,6 +187,9 @@ def _get_class(class_path: str) -> type:
             f"Serialized data named a malformed class path: {class_path!r}"
         )
 
+    saved_path = class_path
+    class_path = _resolve_alias(class_path)
+
     root = class_path.split('.', 1)[0]
     if root not in _ALLOWED_CLASS_ROOTS:
         raise UnsafeClassPathError(
@@ -80,8 +198,18 @@ def _get_class(class_path: str) -> type:
         )
 
     module_name, class_name = class_path.rsplit('.', 1)
-    module = importlib.import_module(module_name)
-    obj = getattr(module, class_name, None)
+    try:
+        module = importlib.import_module(module_name)
+    except ModuleNotFoundError as error:
+        # Only a missing module on the path itself means "class removed". A
+        # missing dependency inside an existing module is a different fault.
+        missing = error.name or ''
+        if not (module_name == missing or module_name.startswith(missing + '.')):
+            raise
+        raise MissingClassError(_missing_class_message(saved_path, class_path)) from error
+    if not hasattr(module, class_name):
+        raise MissingClassError(_missing_class_message(saved_path, class_path))
+    obj = getattr(module, class_name)
     if not isinstance(obj, type):
         # Guards against a path that resolves to a plain function or any other
         # callable — only classes are ever serialized.
@@ -89,8 +217,17 @@ def _get_class(class_path: str) -> type:
             f"Serialized data named {class_path!r}, which is not a class."
         )
 
-    _module_cache[class_path] = obj
+    _module_cache[saved_path] = obj
     return obj
+
+
+def _missing_class_message(saved_path: str, class_path: str) -> str:
+    via = f" (alias of {saved_path!r})" if saved_path != class_path else ""
+    return (
+        f"Serialized data named the class {class_path!r}{via}, which the installed "
+        "code does not have. If the class moved or was renamed, call "
+        "register_class_alias(old_path, new_path)."
+    )
 
 
 def _get_serializable_class(class_path: str) -> type:
@@ -121,7 +258,13 @@ def _get_enum_class(class_path: str) -> type:
 
 
 class SerializerMixin:
-    
+
+    # Version of the attribute layout that _to_dict writes. Increase it when an
+    # attribute is added, removed, renamed, or changes unit, and teach _migrate
+    # to update older payloads. Version 0 is not written, so payloads of
+    # unversioned classes stay unchanged.
+    _schema_version: int = 0
+
     # Compression markers for backward compatibility
     _MARKER_LZ4 = b'\x02'
     _MARKER_ZLIB = b'\x01'
@@ -139,7 +282,8 @@ class SerializerMixin:
         """
         # Include class information for proper deserialization
         obj_dict = {
-            '_class': f"{self.__class__.__module__}.{self.__class__.__name__}",
+            '_class': _class_path(self.__class__),
+            **self._version_marker(),
             **self._to_dict()
         }
         data = msgpack.packb(obj_dict, use_bin_type=True)
@@ -168,6 +312,11 @@ class SerializerMixin:
         if value_type in (int, float, str, bool, bytes, type(None)):
             return value
         
+        # A class is stored as a reference to its module path, never as code.
+        # Checked before the callable test, because every class is callable.
+        if isinstance(value, type):
+            return {'__type__': _class_path(value)}
+
         # Skip functions/methods without _to_dict
         if callable(value) and not hasattr(value, '_to_dict'):
             return None
@@ -176,7 +325,8 @@ class SerializerMixin:
         if hasattr(value, '_to_dict'):
             return {
                 '__object__': True,
-                '_class': f"{value.__class__.__module__}.{value.__class__.__name__}",
+                '_class': _class_path(value.__class__),
+                **value._version_marker(),
                 **value._to_dict()
             }
         
@@ -200,7 +350,7 @@ class SerializerMixin:
         if isinstance(value, Enum):
             return {
                 '__enum__': True,
-                'class': f"{value.__class__.__module__}.{value.__class__.__name__}",
+                'class': _class_path(value.__class__),
                 'value': value.value
             }
         
@@ -211,16 +361,18 @@ class SerializerMixin:
                 'items': [self._serialize_value(item) for item in value]
             }
         
+        # Set handling. Items are sorted by their serialized form, so equal
+        # sets give equal payloads whatever their iteration order.
+        if value_type is set or value_type is frozenset:
+            marker = '__set__' if value_type is set else '__frozenset__'
+            return {
+                marker: True,
+                'items': sorted((self._serialize_value(item) for item in value), key=repr)
+            }
+
         # List handling
         if value_type is list:
             return [self._serialize_value(item) for item in value]
-
-        # Set handling
-        if value_type is set:
-            return {
-                '__set__': True,
-                'items': [self._serialize_value(item) for item in value]
-            }
         
         # Dict handling - single pass detection and serialization
         if value_type is dict:
@@ -278,8 +430,9 @@ class SerializerMixin:
             k_serialized = self._serialize_value(k)
             v_serialized = self._serialize_value(v)
             
-            # Check if key or value became an object marker
-            k_is_obj = isinstance(k_serialized, dict) and k_serialized.get('__object__')
+            # A key that became any marker dict (object, type, enum, tuple) is
+            # not a valid msgpack map key, so it needs the item-list form
+            k_is_obj = isinstance(k_serialized, dict)
             v_is_obj = isinstance(v_serialized, dict) and v_serialized.get('__object__')
             
             if k_is_obj or v_is_obj:
@@ -295,6 +448,44 @@ class SerializerMixin:
         else:
             return {k: v_ser for k, _, v_ser in items}
     
+    def _version_marker(self) -> dict:
+        """Return the schema-version entry for a payload, empty for version 0."""
+        version = type(self)._schema_version
+        return {'__schema_version__': version} if version else {}
+
+    @classmethod
+    def _migrate(cls, data: dict, version: int) -> dict:
+        """Update the payload of an older schema version to the current one.
+
+        Called before ``_from_dict`` when the payload's version is below
+        ``_schema_version``. ``data`` is the raw payload: nested objects are
+        still marker dicts. Override it when you increase ``_schema_version``;
+        branch on ``version`` so that every older layout is covered.
+
+        Args:
+            data: Attribute payload, without the class and version entries.
+            version: Schema version that wrote the payload (0 if none).
+
+        Returns:
+            The payload in the current layout.
+        """
+        return data
+
+    @classmethod
+    def _load_object(cls, obj_class: type, value: dict, skip: tuple) -> Any:
+        """Check the schema version of one payload, migrate it, and rebuild it."""
+        version = value.get('__schema_version__', 0)
+        current = obj_class._schema_version
+        if version > current:
+            raise SchemaVersionError(
+                f"Serialized {_class_path(obj_class)} has schema version {version}, "
+                f"but the installed class reads up to version {current}."
+            )
+        obj_data = {k: v for k, v in value.items() if k not in skip}
+        if version < current:
+            obj_data = obj_class._migrate(obj_data, version)
+        return obj_class._from_dict(obj_data)
+
     def _to_dict(self) -> dict:
         """
         Convert object to dictionary for serialization.
@@ -317,8 +508,8 @@ class SerializerMixin:
             # Skip attributes explicitly excluded by subclasses (transient caches)
             if key in exclude:
                 continue
-            # Skip non-serializable callables
-            if callable(value) and not hasattr(value, '_to_dict'):
+            # Skip non-serializable callables (a class is kept as a reference)
+            if callable(value) and not hasattr(value, '_to_dict') and not isinstance(value, type):
                 continue
             result[key] = self._serialize_value(value)
         return result
@@ -351,13 +542,19 @@ class SerializerMixin:
         # Use stored class information if available
         if '_class' in obj_dict:
             actual_cls = _get_serializable_class(obj_dict['_class'])
-            # Remove class marker before reconstructing
-            obj_data = {k: v for k, v in obj_dict.items() if k != '_class'}
-            return actual_cls._from_dict(obj_data)
+            return cls._load_object(actual_cls, obj_dict, ('_class', '__schema_version__'))
         else:
             # Fallback for backward compatibility
             return cls._from_dict(obj_dict)
-    
+
+    @staticmethod
+    def _set_items(value: dict, marker: str) -> list:
+        """Items of a set payload: ``{marker: True, 'items': [...]}``, or the
+        list-valued ``{marker: [...]}`` form written by pre-release builds."""
+        if value[marker] is True:
+            return value['items']
+        return value[marker]
+
     @classmethod
     def _deserialize_value(cls, value: Any) -> Any:
         """
@@ -378,8 +575,11 @@ class SerializerMixin:
             if '__object__' in value:
                 # Reconstruct regular object using cached class lookup
                 obj_class = _get_serializable_class(value['_class'])
-                obj_data = {k: v for k, v in value.items() if k not in ('__object__', '_class')}
-                return obj_class._from_dict(obj_data)
+                return cls._load_object(
+                    obj_class, value, ('__object__', '_class', '__schema_version__')
+                )
+            elif '__type__' in value:
+                return _get_class(value['__type__'])
             elif '__datetime__' in value:
                 return datetime.fromisoformat(value['__datetime__'])
             elif '__timedelta__' in value:
@@ -388,11 +588,15 @@ class SerializerMixin:
                 # Reconstruct enum using cached class lookup
                 enum_class = _get_enum_class(value['class'])
                 return enum_class(value['value'])
+            elif '__set__' in value:
+                return {cls._deserialize_value(item) for item in cls._set_items(value, '__set__')}
+            elif '__frozenset__' in value:
+                return frozenset(
+                    cls._deserialize_value(item) for item in cls._set_items(value, '__frozenset__')
+                )
             elif '__tuple__' in value:
                 # Recursively reconstruct tuple items
                 return tuple(cls._deserialize_value(item) for item in value['items'])
-            elif '__set__' in value:
-                return set(cls._deserialize_value(item) for item in value['items'])
             elif '__dataframe__' in value:
                 import pandas as pd
                 if value.get('__multiindex__'):
