@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 license = {text = "AGPL-3.0-or-later"}
 authors = [
     {name = "Nicholas Siemons", email = "nsiemons@stanford.edu"},
+    {name = "Antoine Breton", email = "abreton@stanford.edu"},
 ]
 maintainers = [
     {name = "Nicholas Siemons", email = "nsiemons@stanford.edu"},

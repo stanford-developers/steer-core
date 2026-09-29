@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2024-2026 Stanford University
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import functools
 import importlib
 import msgpack
 import msgpack_numpy as m
@@ -11,8 +12,59 @@ from typing import TypeVar, Any
 from datetime import datetime
 from enum import Enum
 
-# Patch msgpack for numpy support once at module import
+# Capture the unpatched msgpack reader BEFORE m.patch() replaces it. m.patch()
+# installs msgpack_numpy.decode as the global object_hook, and that decoder calls
+# pickle.loads on object-dtype ('O') numpy arrays. pickle.loads runs arbitrary
+# code, so an untrusted payload could execute code during unpack. The patched
+# reader also wraps any object_hook a caller passes (it runs decode *first*), so
+# a caller cannot make unpack safe by passing a hook — the reader itself must be
+# replaced. See _safe_unpackb below.
+_raw_unpackb = msgpack.unpackb
+
+# Patch msgpack for numpy support once at module import (encoding + decoding).
 m.patch()
+
+
+class UnsafeObjectArrayError(ValueError):
+    """A payload asked to decode an object-dtype ('O') numpy array.
+
+    That decode path calls ``pickle.loads``, which runs arbitrary code. No cell
+    design uses object-dtype arrays, so this shape only appears in a hostile
+    payload and is refused.
+    """
+
+
+def _safe_decode(obj: Any, chain: Any = None) -> Any:
+    """Object hook that decodes numeric numpy arrays but refuses object arrays.
+
+    ``msgpack_numpy.decode`` calls ``pickle.loads`` when a map declares an
+    object-dtype array (``b'kind' == b'O'``). This wrapper rejects that shape
+    before ``decode`` can reach the pickle branch, and delegates every other map
+    (numeric/void arrays, complex numbers, plain dicts) to the normal decoder.
+    """
+    if isinstance(obj, dict) and b'nd' in obj and obj.get(b'kind') == b'O':
+        raise UnsafeObjectArrayError(
+            "object-dtype ('O') numpy arrays are not allowed"
+        )
+    return m.decode(obj, chain=chain)
+
+
+def _safe_unpackb(packed: bytes, **kwargs: Any) -> Any:
+    """Drop-in replacement for the patched ``msgpack.unpackb`` that cannot pickle.
+
+    Uses the unpatched reader with :func:`_safe_decode` as the object hook, so
+    numeric numpy arrays still round-trip while the pickle path stays closed.
+    """
+    chain = kwargs.pop('object_hook', None)
+    kwargs['object_hook'] = functools.partial(_safe_decode, chain=chain)
+    return _raw_unpackb(packed, **kwargs)
+
+
+# Re-override the readers that m.patch() made unsafe. Writing (packb) is
+# unchanged, so serialization of numpy arrays still works. Every msgpack read in
+# the process now refuses object-dtype arrays instead of unpickling them.
+msgpack.unpackb = _safe_unpackb
+msgpack.loads = _safe_unpackb
 
 # Module-level cache for imported modules (avoids repeated importlib calls).
 # Only ever holds paths that passed _get_class's allowlist + type checks, so a
