@@ -8,7 +8,7 @@ import lz4.frame
 import zlib
 import numpy as np
 from typing import TypeVar, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
 # Patch msgpack for numpy support once at module import
@@ -281,6 +281,10 @@ class SerializerMixin:
         # datetime handling
         if value_type is datetime:
             return {'__datetime__': value.isoformat()}
+
+        # timedelta handling
+        if value_type is timedelta:
+            return {'__timedelta__': value.total_seconds()}
         
         # Pandas DataFrame handling (lazy import to avoid hard dependency)
         try:
@@ -309,7 +313,10 @@ class SerializerMixin:
         # sets give equal payloads whatever their iteration order.
         if value_type is set or value_type is frozenset:
             marker = '__set__' if value_type is set else '__frozenset__'
-            return {marker: sorted((self._serialize_value(item) for item in value), key=repr)}
+            return {
+                marker: True,
+                'items': sorted((self._serialize_value(item) for item in value), key=repr)
+            }
 
         # List handling
         if value_type is list:
@@ -433,13 +440,21 @@ class SerializerMixin:
         Override this in subclasses to customize serialization behavior.
         Single-pass implementation for efficiency.
 
+        Subclasses may define ``_serializer_exclude`` as a set of attribute
+        names to skip during serialization (e.g. transient caches holding
+        objects msgpack cannot encode, such as a cached ``pd.DatetimeIndex``).
+
         Returns:
             Dictionary representation of the object.
         """
+        exclude = getattr(self, '_serializer_exclude', None) or set()
         result = {}
         for key, value in self.__dict__.items():
             # Skip _parent - PropagationMixin rebuilds it via _from_dict
             if key == '_parent':
+                continue
+            # Skip attributes explicitly excluded by subclasses (transient caches)
+            if key in exclude:
                 continue
             # Skip non-serializable callables (a class is kept as a reference)
             if callable(value) and not hasattr(value, '_to_dict') and not isinstance(value, type):
@@ -479,7 +494,15 @@ class SerializerMixin:
         else:
             # Fallback for backward compatibility
             return cls._from_dict(obj_dict)
-    
+
+    @staticmethod
+    def _set_items(value: dict, marker: str) -> list:
+        """Items of a set payload: ``{marker: True, 'items': [...]}``, or the
+        list-valued ``{marker: [...]}`` form written by pre-release builds."""
+        if value[marker] is True:
+            return value['items']
+        return value[marker]
+
     @classmethod
     def _deserialize_value(cls, value: Any) -> Any:
         """
@@ -507,14 +530,18 @@ class SerializerMixin:
                 return _get_class(value['__type__'])
             elif '__datetime__' in value:
                 return datetime.fromisoformat(value['__datetime__'])
+            elif '__timedelta__' in value:
+                return timedelta(seconds=value['__timedelta__'])
             elif '__enum__' in value:
                 # Reconstruct enum using cached class lookup
                 enum_class = _get_enum_class(value['class'])
                 return enum_class(value['value'])
             elif '__set__' in value:
-                return {cls._deserialize_value(item) for item in value['__set__']}
+                return {cls._deserialize_value(item) for item in cls._set_items(value, '__set__')}
             elif '__frozenset__' in value:
-                return frozenset(cls._deserialize_value(item) for item in value['__frozenset__'])
+                return frozenset(
+                    cls._deserialize_value(item) for item in cls._set_items(value, '__frozenset__')
+                )
             elif '__tuple__' in value:
                 # Recursively reconstruct tuple items
                 return tuple(cls._deserialize_value(item) for item in value['items'])
