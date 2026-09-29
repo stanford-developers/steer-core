@@ -463,3 +463,43 @@ class ValidationMixin:
                 f"base_binning_frequency '{base_freq.value}' is coarser than "
                 f"{name} '{compounding_freq.value}'."
             )
+
+    @staticmethod
+    def validate_not_none(value, name: str) -> None:
+        """Validate that a value is not None.
+
+        Args:
+            value: The value to validate.
+            name: The name of the parameter for error messages.
+
+        Raises:
+            ValueError: If the value is None.
+
+        Examples:
+            >>> ValidationMixin.validate_not_none(42, 'rate')      # OK
+            >>> ValidationMixin.validate_not_none(None, 'rate')    # Raises ValueError
+        """
+        if value is None:
+            raise ValueError(f"{name} must not be None.")
+
+    @staticmethod
+    def validate_active_mode(current_mode, required_mode, property_name: str) -> None:
+        """Validate that the current mode matches the required mode for a property.
+
+        Args:
+            current_mode: The current mode (enum value or string).
+            required_mode: The required mode for the property (enum value or string).
+            property_name: The name of the property being accessed.
+
+        Raises:
+            RuntimeError: If the current mode does not match the required mode.
+
+        Examples:
+            >>> ValidationMixin.validate_active_mode('real', 'real', 'real_npv')        # OK
+            >>> ValidationMixin.validate_active_mode('real', 'nominal', 'nominal_npv')  # Raises RuntimeError
+        """
+        if current_mode != required_mode:
+            raise RuntimeError(
+                f"'{property_name}' is not available in '{current_mode}' mode. "
+                f"Switch to '{required_mode}' mode to access this property."
+            )

@@ -20,6 +20,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reader that refuses object-dtype arrays (`UnsafeObjectArrayError`) and
   delegates every other map to the normal decoder. Writing (`packb`) is
   unchanged. No cell design uses object-dtype arrays.
+  
+## [0.2.24] - 2026-09-18
+
+### Added
+- **`SerializerMixin` honours a `_serializer_exclude` hook.** Subclasses may
+  declare a set of attribute names to skip during serialization. Without it,
+  a transient cache holding an object msgpack cannot encode (e.g. a cached
+  `pd.DatetimeIndex`) makes the whole object unserializable —
+  `steer_financing.Revenues.time_series_allocation` declares exactly such a
+  set and every `serialize()` on it raised
+  `TypeError: can not serialize 'DatetimeIndex' object`.
+- `SerializerMixin` round-trips `timedelta` (`__timedelta__`) and `set`
+  (`__set__`). Both previously fell through to the generic branch and failed.
+- `ValidationMixin.validate_not_none(value, name)` — raises `ValueError` when
+  a required value is `None`.
+- `ValidationMixin.validate_active_mode(current_mode, required_mode, property_name)`
+  — raises `RuntimeError` when a property is read in the wrong project mode
+  (e.g. reading `nominal_npv` while in `real` mode).
+- `Constants.Format.DEFAULT_MONTH_FMT` (`"%Y-%m"`), alongside the existing
+  hour and day formats.
+
+### Notes
+- These four items existed only on the `tomeliot_dev` branch, which forked
+  before `main`'s history was rewritten and was never merged back.
+  `steer-financing` was developed against them, so none of its demos ran and
+  26 of its serialization tests failed against `main`. All are additive; no
+  existing behaviour changes.
+- Downstream packages that define their own `SerializerMixin` subclasses must
+  still register their root package with `allow_class_roots()` (see 0.2.21) —
+  `steer_financing`, `steer_infrastructure`, `steer_opencell_production` and
+  `steer_ccus_tea` all currently subclass it outside the default allowlist.
 
 ## [0.2.23] - 2026-09-14
 
