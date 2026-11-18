@@ -66,6 +66,35 @@ def _safe_unpackb(packed: bytes, **kwargs: Any) -> Any:
 msgpack.unpackb = _safe_unpackb
 msgpack.loads = _safe_unpackb
 
+
+# numpy dtype kinds that cannot be exported through the buffer protocol.
+_NO_BUFFER_KINDS = 'Mm'
+
+
+def _portable_array(values: Any) -> Any:
+    """Return ``values`` in a form msgpack_numpy can pack on every platform.
+
+    msgpack_numpy takes an array's bytes through the buffer protocol
+    (``ndarray.data``) everywhere except macOS, where it calls ``tobytes()``, and
+    numpy refuses to export a ``datetime64`` or ``timedelta64`` array as a buffer
+    ("cannot include dtype 'M' in a buffer"). So packing such an array worked on
+    macOS and raised ``ValueError`` on Linux and Windows.
+
+    Such an array is returned as the map msgpack_numpy's own encoder writes for
+    it, with the bytes taken by ``tobytes()``. That is byte for byte what macOS
+    always produced, and the decoder turns it back into the same array, so
+    reading is unchanged. Anything else is returned as it is.
+    """
+    if isinstance(values, np.ndarray) and values.dtype.kind in _NO_BUFFER_KINDS:
+        return {
+            b'nd': True,
+            b'type': values.dtype.str,
+            b'kind': b'',
+            b'shape': values.shape,
+            b'data': values.tobytes(),
+        }
+    return values
+
 # Module-level cache for imported modules (avoids repeated importlib calls).
 # Only ever holds paths that passed _get_class's allowlist + type checks, so a
 # cache hit is safe to return without re-validating.
@@ -378,14 +407,18 @@ class SerializerMixin:
         if value_type is dict:
             return self._serialize_dict(value)
         
-        # Fallback for other types (numpy arrays handled by msgpack_numpy)
-        return value
+        # Fallback for other types. Numpy arrays are packed by msgpack_numpy;
+        # datetime64 and timedelta64 ones are encoded here first, because
+        # msgpack_numpy cannot pack them outside macOS (see _portable_array).
+        return _portable_array(value)
     
     def _serialize_dataframe(self, df) -> dict:
         """
         Serialize a pandas DataFrame to a dictionary representation.
         Stores columns as numpy arrays to leverage msgpack_numpy for
-        efficient dtype-preserving serialization.
+        efficient dtype-preserving serialization. Datetime and timedelta
+        columns (and such an index) go through ``_portable_array``, so they
+        pack on Linux and Windows as they do on macOS.
 
         Args:
             df: The DataFrame to serialize.
@@ -396,8 +429,8 @@ class SerializerMixin:
         result = {
             '__dataframe__': True,
             'columns': list(df.columns),
-            'data': {col: df[col].to_numpy() for col in df.columns},
-            'index_values': df.index.to_numpy(),
+            'data': {col: _portable_array(df[col].to_numpy()) for col in df.columns},
+            'index_values': _portable_array(df.index.to_numpy()),
             'index_name': df.index.name,
         }
         # Preserve MultiIndex if present
