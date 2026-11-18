@@ -3,6 +3,7 @@
 
 """Tests for steer_core.Mixins.Serializer.SerializerMixin."""
 
+import sys
 from datetime import datetime
 from enum import Enum
 
@@ -440,3 +441,83 @@ class TestSchemaVersion:
         payload = {'_class': f"{__name__}.Versioned", '__schema_version__': 3, 'length': 1.0}
         with pytest.raises(SchemaVersionError, match="version 3"):
             Versioned.deserialize(_payload_of(payload))
+
+
+# msgpack_numpy reads an array's bytes through the buffer protocol everywhere
+# except macOS, and numpy refuses that for datetime64 and timedelta64 arrays. It
+# picks the path from sys.platform at call time, so each case below runs on
+# whatever machine runs the tests.
+PLATFORMS = ("linux", "darwin", "win32")
+
+
+def _dated_frame():
+    return pd.DataFrame(
+        {
+            "start": pd.date_range("2025-01-01", periods=4, freq="h"),
+            "span": pd.to_timedelta([1, 2, 3, 4], unit="h"),
+            "amount": [1.0, 2.0, 3.0, 4.0],
+        }
+    )
+
+
+class TestDatetimeArraysOnEveryPlatform:
+
+    @pytest.mark.parametrize("platform", PLATFORMS)
+    def test_a_dataframe_with_datetime_columns_round_trips(self, monkeypatch, platform):
+        frame = _dated_frame()
+        monkeypatch.setattr(sys, "platform", platform)
+        restored = _round_trip(frame)
+        assert restored["start"].dtype == frame["start"].dtype
+        assert restored["span"].dtype == frame["span"].dtype
+        pd.testing.assert_frame_equal(
+            restored.reset_index(drop=True), frame.reset_index(drop=True)
+        )
+
+    @pytest.mark.parametrize("platform", PLATFORMS)
+    def test_a_datetime_index_round_trips(self, monkeypatch, platform):
+        frame = _dated_frame().set_index("start")
+        monkeypatch.setattr(sys, "platform", platform)
+        restored = _round_trip(frame)
+        assert restored.index.dtype == frame.index.dtype
+        assert list(restored.index) == list(frame.index)
+        assert restored.index.name == "start"
+
+    @pytest.mark.parametrize("platform", PLATFORMS)
+    @pytest.mark.parametrize(
+        "array",
+        [
+            np.array(["2025-01-01T00", "2025-01-01T01"], dtype="datetime64[ns]"),
+            np.array([[1, 2], [3, 4]], dtype="timedelta64[s]"),
+            np.array([], dtype="datetime64[D]"),
+        ],
+        ids=["datetime64[ns]", "timedelta64[s] 2-D", "empty datetime64[D]"],
+    )
+    def test_a_bare_array_round_trips(self, monkeypatch, platform, array):
+        monkeypatch.setattr(sys, "platform", platform)
+        restored = _round_trip(array)
+        assert restored.dtype == array.dtype
+        assert restored.shape == array.shape
+        np.testing.assert_array_equal(restored, array)
+
+    def test_an_array_inside_a_container_round_trips(self, monkeypatch):
+        stamps = np.array(["2025-01-01", "2025-06-01"], dtype="datetime64[D]")
+        monkeypatch.setattr(sys, "platform", "linux")
+        restored = _round_trip({"stamps": stamps, "rows": [stamps]})
+        np.testing.assert_array_equal(restored["stamps"], stamps)
+        np.testing.assert_array_equal(restored["rows"][0], stamps)
+
+    def test_the_payload_is_the_same_on_every_platform(self, monkeypatch):
+        """One wire format: what macOS always wrote, byte for byte."""
+        payloads = {}
+        for platform in PLATFORMS:
+            monkeypatch.setattr(sys, "platform", platform)
+            payloads[platform] = Holder(_dated_frame()).serialize()
+        assert payloads["linux"] == payloads["darwin"]
+        assert payloads["win32"] == payloads["darwin"]
+
+    def test_other_arrays_are_left_to_msgpack_numpy(self):
+        floats = np.array([1.0, 2.0])
+        assert Serializer._portable_array(floats) is floats
+        assert Serializer._portable_array([1, 2]) == [1, 2]
+        assert Serializer._portable_array(None) is None
+

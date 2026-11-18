@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.27] - 2026-11-18
+
+### Fixed
+- **`SerializerMixin.serialize()` failed on Linux and Windows for datetime
+  data.** A DataFrame with a `datetime64` or `timedelta64` column or index, or
+  such an array held directly, raised `ValueError: cannot include dtype 'M' in a
+  buffer`. It worked on macOS. `msgpack_numpy` reads an array's bytes through
+  the buffer protocol everywhere except macOS, where it calls `tobytes()`, and
+  numpy does not export datetime arrays as buffers. The serializer now encodes
+  those arrays itself, into the map `msgpack_numpy` writes on macOS, so the
+  payload is byte for byte what macOS always produced. Reading is unchanged and
+  existing payloads still load. Found through steer-financing, whose `CashFlow`
+  holds a table with `start_dt` and `end_dt` columns.
+
 ## [0.2.26] - 2026-09-29
 
 ### Security
